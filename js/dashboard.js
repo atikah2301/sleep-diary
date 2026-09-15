@@ -319,7 +319,7 @@ export function initDashboardView(container) {
           y: {
             min: 0,
             grid: { color: CHART_COLORS.grid },
-            ticks: { color: CHART_COLORS.text, callback: (v) => formatMinutes(v) },
+            ticks: { color: CHART_COLORS.text, stepSize: 30, callback: (v) => formatMinutes(v) },
           },
           x: { grid: { color: CHART_COLORS.grid }, ticks: xAxisTicksOptions(labels, durationPeriod) },
         },
