@@ -36,24 +36,25 @@
 
       <!-- Main app (post-login) -->
       <section id="view-main" class="view" hidden>
-        <header class="app-header">
-          <h1>Sleep Diary</h1>
-          <button id="logout-button" class="secondary" style="width: auto; margin-top: 0;">
-            Log out
-          </button>
-        </header>
+        <div class="app-shell">
+          <aside class="sidebar">
+            <h1>Sleep Diary</h1>
+            <nav class="tabs">
+              <button type="button" data-tab="entry" class="active">Add entry</button>
+              <button type="button" data-tab="trends">Trends</button>
+              <button type="button" data-tab="table">Table</button>
+              <button type="button" data-tab="export">Export</button>
+            </nav>
+            <button id="logout-button" class="secondary">Log out</button>
+          </aside>
 
-        <nav class="tabs">
-          <button type="button" data-tab="entry" class="active">Add entry</button>
-          <button type="button" data-tab="trends">Trends</button>
-          <button type="button" data-tab="table">Table</button>
-          <button type="button" data-tab="export">Export</button>
-        </nav>
-
-        <div id="tab-entry" class="tab-panel"></div>
-        <div id="tab-trends" class="tab-panel" hidden></div>
-        <div id="tab-table" class="tab-panel" hidden></div>
-        <div id="tab-export" class="tab-panel" hidden></div>
+          <main class="main-content">
+            <div id="tab-entry" class="tab-panel"></div>
+            <div id="tab-trends" class="tab-panel" hidden></div>
+            <div id="tab-table" class="tab-panel" hidden></div>
+            <div id="tab-export" class="tab-panel" hidden></div>
+          </main>
+        </div>
       </section>
     </div>
 
