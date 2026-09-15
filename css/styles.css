@@ -256,6 +256,24 @@ table.export-preview td {
   text-align: left;
 }
 
+.table-scroll {
+  overflow-x: auto;
+}
+
+table.data-table th[data-sort] {
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+}
+
+table.data-table tbody tr {
+  cursor: pointer;
+}
+
+table.data-table tbody tr:hover {
+  background: var(--surface-raised);
+}
+
 @media print {
   nav.tabs,
   .export-buttons,
