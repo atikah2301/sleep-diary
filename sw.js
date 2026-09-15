@@ -1,4 +1,7 @@
-const CACHE_NAME = "sleep-diary-shell-v1";
+// __CACHE_VERSION__ is substituted with the commit SHA by the deploy workflow
+// (.github/workflows/deploy.yml) on every push, so the browser always sees this
+// file as changed and installs a fresh cache. Locally it's just a placeholder.
+const CACHE_NAME = "sleep-diary-shell-__CACHE_VERSION__";
 
 const APP_SHELL = [
   "./",
@@ -9,8 +12,10 @@ const APP_SHELL = [
   "./js/auth.js",
   "./js/time.js",
   "./js/metrics.js",
+  "./js/app.js",
   "./js/entry.js",
   "./js/dashboard.js",
+  "./js/table.js",
   "./js/export.js",
   "./js/sw-register.js",
   "./manifest.webmanifest",
@@ -20,7 +25,7 @@ const APP_SHELL = [
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)),
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)).then(() => self.skipWaiting()),
   );
 });
 
