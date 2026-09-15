@@ -78,7 +78,7 @@ nav.tabs button.active {
 
 .app-shell {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   width: 100%;
 }
 
@@ -131,7 +131,7 @@ nav.tabs button.active {
   }
 
   .app-shell {
-    flex-wrap: nowrap;
+    flex-direction: row;
     align-items: flex-start;
     gap: 32px;
   }
