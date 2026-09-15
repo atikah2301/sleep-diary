@@ -90,7 +90,7 @@ export function initTableView(container) {
         <div class="week-nav-label" id="week-label">w/c –</div>
         <button type="button" id="week-next" aria-label="Next week">▶</button>
       </div>
-      <p class="hint" style="margin: 0 0 12px">Tap a row to open it for editing. Tap a column header to sort.</p>
+      <p class="hint" style="margin: 0 0 12px">Select a row to open it for editing. Select a column header to sort.</p>
       <p id="table-error" class="error-message" hidden></p>
       <div class="table-scroll">
         <table class="export-preview data-table" id="diary-table"></table>
