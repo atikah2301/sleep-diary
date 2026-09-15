@@ -14,6 +14,9 @@ const CHART_COLORS = {
   text: "#94a3b8",
   monday: "#fbbf24",
   goal: "#e2e8f0",
+  underslept: "#f87171",
+  normalSleep: "#34d399",
+  overslept: "#fbbf24",
 };
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -60,6 +63,28 @@ function groupByPeriod(rows, period) {
       totalSleepTimeMinutes: average(entries.map((e) => e.metrics.totalSleepTimeMinutes)),
       timeInBedMinutes: average(entries.map((e) => e.metrics.timeInBedMinutes)),
     }));
+}
+
+/** Classifies a night's total sleep time against a goal duration, using the goal +/- 1hr
+ * as the "normal" band — anything shorter counts as underslept, anything longer as overslept. */
+function classifyDurationBucket(totalSleepTimeMinutes, goalMinutes) {
+  if (totalSleepTimeMinutes < goalMinutes - 60) return "under";
+  if (totalSleepTimeMinutes > goalMinutes + 60) return "over";
+  return "normal";
+}
+
+function groupBucketsByPeriod(rows, period, goalMinutes) {
+  const groups = new Map();
+  for (const row of rows) {
+    const tst = row.metrics.totalSleepTimeMinutes;
+    if (tst === null || tst === undefined || Number.isNaN(tst)) continue;
+    const key = periodKey(row.entry_date, period);
+    if (!groups.has(key)) groups.set(key, { under: 0, normal: 0, over: 0 });
+    groups.get(key)[classifyDurationBucket(tst, goalMinutes)]++;
+  }
+  return [...groups.entries()]
+    .sort(([a], [b]) => (a < b ? -1 : 1))
+    .map(([key, counts]) => ({ key, ...counts }));
 }
 
 function formatMinutes(mins) {
@@ -159,6 +184,14 @@ export function initDashboardView(container) {
       <div class="card">
         <div class="chart-wrap"><canvas id="time-to-rise-chart"></canvas></div>
       </div>
+
+      <div class="card">
+        <div class="period-toggle" id="consistency-period-toggle">
+          <button type="button" data-period="week" class="active">Week</button>
+          <button type="button" data-period="month">Month</button>
+        </div>
+        <div class="chart-wrap"><canvas id="consistency-chart"></canvas></div>
+      </div>
     </div>
   `;
 
@@ -170,6 +203,8 @@ export function initDashboardView(container) {
   const timesCanvas = container.querySelector("#times-chart");
   const timeToSleepCanvas = container.querySelector("#time-to-sleep-chart");
   const timeToRiseCanvas = container.querySelector("#time-to-rise-chart");
+  const consistencyToggle = container.querySelector("#consistency-period-toggle");
+  const consistencyCanvas = container.querySelector("#consistency-chart");
 
   let rows = [];
   let efficiencyPeriod = "day";
@@ -179,6 +214,8 @@ export function initDashboardView(container) {
   let timesChart = null;
   let timeToSleepChart = null;
   let timeToRiseChart = null;
+  let consistencyPeriod = "week";
+  let consistencyChart = null;
 
   function filteredRows() {
     if (!tagFilter.value) return rows;
@@ -408,12 +445,67 @@ export function initDashboardView(container) {
     });
   }
 
+  function renderConsistencyChart(rowsForChart) {
+    const { durationGoalMinutes } = getGoals();
+    const grouped = groupBucketsByPeriod(rowsForChart, consistencyPeriod, durationGoalMinutes);
+    const labels = grouped.map((g) => g.key);
+    if (consistencyChart) consistencyChart.destroy();
+    consistencyChart = new Chart(consistencyCanvas, {
+      type: "bar",
+      data: {
+        labels,
+        datasets: [
+          {
+            label: "Underslept",
+            data: grouped.map((g) => g.under),
+            backgroundColor: CHART_COLORS.underslept,
+          },
+          {
+            label: "Normal",
+            data: grouped.map((g) => g.normal),
+            backgroundColor: CHART_COLORS.normalSleep,
+          },
+          {
+            label: "Overslept",
+            data: grouped.map((g) => g.over),
+            backgroundColor: CHART_COLORS.overslept,
+          },
+        ],
+      },
+      options: {
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            stacked: true,
+            grid: { color: CHART_COLORS.grid },
+            ticks: xAxisTicksOptions(labels, consistencyPeriod),
+          },
+          y: {
+            stacked: true,
+            beginAtZero: true,
+            ticks: { color: CHART_COLORS.text, precision: 0 },
+            grid: { color: CHART_COLORS.grid },
+          },
+        },
+        plugins: {
+          legend: { labels: { color: CHART_COLORS.text } },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y} night${ctx.parsed.y === 1 ? "" : "s"}`,
+            },
+          },
+        },
+      },
+    });
+  }
+
   function renderAll() {
     const filtered = filteredRows();
     renderSummary(filtered);
     renderEfficiencyChart(filtered);
     renderDurationChart(filtered);
     renderTimesChart(filtered);
+    renderConsistencyChart(filtered);
     timeToSleepChart = renderMinutesDiffChart(
       timeToSleepChart,
       timeToSleepCanvas,
@@ -446,6 +538,14 @@ export function initDashboardView(container) {
     durationToggle.querySelectorAll("button").forEach((b) => b.classList.toggle("active", b === btn));
     durationPeriod = btn.dataset.period;
     renderDurationChart(filteredRows());
+  });
+
+  consistencyToggle.addEventListener("click", (event) => {
+    const btn = event.target.closest("button[data-period]");
+    if (!btn) return;
+    consistencyToggle.querySelectorAll("button").forEach((b) => b.classList.toggle("active", b === btn));
+    consistencyPeriod = btn.dataset.period;
+    renderConsistencyChart(filteredRows());
   });
 
   tagFilter.addEventListener("change", renderAll);
