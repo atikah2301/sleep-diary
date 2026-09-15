@@ -249,6 +249,30 @@ textarea:focus {
   margin: -10px 0 16px;
 }
 
+.mode-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--surface-raised);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  font-size: 0.85rem;
+}
+
+.link-button {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--accent);
+  font-size: 0.85rem;
+  text-decoration: underline;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
 button.primary {
   width: 100%;
   padding: 14px;

@@ -15,6 +15,11 @@ function formatMinutes(mins) {
   return `${h}h ${String(m).padStart(2, "0")}m`;
 }
 
+function formatDateLabel(dateStr) {
+  const d = new Date(`${dateStr}T00:00:00`);
+  return d.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+}
+
 const EMPTY_FORM = {
   bed_time: "",
   sleep_time: "",
@@ -28,6 +33,11 @@ const EMPTY_FORM = {
 
 export function initEntryView(container) {
   container.innerHTML = `
+    <div id="entry-mode-banner" class="mode-banner" hidden>
+      <span>Editing entry for <strong id="entry-mode-date"></strong></span>
+      <button type="button" id="entry-mode-cancel" class="link-button">Cancel / New entry</button>
+    </div>
+
     <form id="entry-form" class="card">
       <label for="entry-date">For the night of...</label>
       <input id="entry-date" type="date" required />
@@ -68,7 +78,7 @@ export function initEntryView(container) {
       <textarea id="notes" rows="2"></textarea>
 
       <p id="entry-error" class="error-message" hidden></p>
-      <button type="submit" class="primary">Save entry</button>
+      <button type="submit" class="primary" id="entry-submit">Save entry</button>
     </form>
 
     <div id="entry-summary" class="card" hidden>
@@ -102,8 +112,12 @@ export function initEntryView(container) {
   const tagSelect = container.querySelector("#tag-select");
   const notesInput = container.querySelector("#notes");
   const form = container.querySelector("#entry-form");
+  const submitBtn = container.querySelector("#entry-submit");
   const errorEl = container.querySelector("#entry-error");
   const summaryEl = container.querySelector("#entry-summary");
+  const modeBanner = container.querySelector("#entry-mode-banner");
+  const modeDateEl = container.querySelector("#entry-mode-date");
+  const modeCancelBtn = container.querySelector("#entry-mode-cancel");
 
   let sleepMode = "time";
 
@@ -180,6 +194,12 @@ export function initEntryView(container) {
     showSummaryIfComplete();
   }
 
+  function setEditMode(existing, date) {
+    modeBanner.hidden = !existing;
+    if (existing) modeDateEl.textContent = formatDateLabel(date);
+    submitBtn.textContent = existing ? "Update entry" : "Save entry";
+  }
+
   async function loadEntryForDate(date) {
     errorEl.hidden = true;
     const { data, error } = await supabase
@@ -193,6 +213,7 @@ export function initEntryView(container) {
       errorEl.hidden = false;
       return;
     }
+    setEditMode(Boolean(data), date);
     applyEntryToForm(data ?? EMPTY_FORM);
   }
 
@@ -222,6 +243,11 @@ export function initEntryView(container) {
 
   dateInput.addEventListener("change", () => loadEntryForDate(dateInput.value));
 
+  modeCancelBtn.addEventListener("click", () => {
+    dateInput.value = yesterdayISO();
+    loadEntryForDate(dateInput.value);
+  });
+
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     errorEl.hidden = true;
@@ -248,6 +274,7 @@ export function initEntryView(container) {
       return;
     }
 
+    setEditMode(true, dateInput.value);
     showSummaryIfComplete();
   });
 
