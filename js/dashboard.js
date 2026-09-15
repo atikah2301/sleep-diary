@@ -78,17 +78,19 @@ export function initDashboardView(container) {
       </div>
     </div>
 
-    <div class="card">
-      <div class="period-toggle" id="efficiency-period-toggle">
-        <button type="button" data-period="day" class="active">Day</button>
-        <button type="button" data-period="week">Week</button>
-        <button type="button" data-period="month">Month</button>
+    <div class="charts-grid">
+      <div class="card">
+        <div class="period-toggle" id="efficiency-period-toggle">
+          <button type="button" data-period="day" class="active">Day</button>
+          <button type="button" data-period="week">Week</button>
+          <button type="button" data-period="month">Month</button>
+        </div>
+        <div class="chart-wrap"><canvas id="efficiency-chart"></canvas></div>
       </div>
-      <div class="chart-wrap"><canvas id="efficiency-chart"></canvas></div>
-    </div>
 
-    <div class="card">
-      <div class="chart-wrap"><canvas id="times-chart"></canvas></div>
+      <div class="card">
+        <div class="chart-wrap"><canvas id="times-chart"></canvas></div>
+      </div>
     </div>
   `;
 
