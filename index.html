@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Sleep Diary</title>
+    <meta name="description" content="Nightly sleep diary and sleep efficiency tracker" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <meta name="theme-color" content="#1e1b4b" />
+    <link rel="icon" href="icons/icon-192.png" />
+    <link rel="apple-touch-icon" href="icons/icon-192.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Sleep Diary" />
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
+    <div id="app">
+      <!-- Login -->
+      <section id="view-login" class="view">
+        <header class="app-header">
+          <h1>Sleep Diary</h1>
+        </header>
+        <form id="login-form" class="card">
+          <label for="login-passcode">Passcode</label>
+          <input
+            id="login-passcode"
+            type="password"
+            inputmode="numeric"
+            autocomplete="current-password"
+            required
+          />
+          <p id="login-error" class="error-message" hidden></p>
+          <button type="submit" class="primary">Enter</button>
+        </form>
+      </section>
+
+      <!-- Main app (post-login) -->
+      <section id="view-main" class="view" hidden>
+        <header class="app-header">
+          <h1>Sleep Diary</h1>
+          <button id="logout-button" class="secondary" style="width: auto; margin-top: 0;">
+            Log out
+          </button>
+        </header>
+
+        <nav class="tabs">
+          <button type="button" data-tab="entry" class="active">Add entry</button>
+          <button type="button" data-tab="trends">Trends</button>
+          <button type="button" data-tab="export">Export</button>
+        </nav>
+
+        <div id="tab-entry" class="tab-panel"></div>
+        <div id="tab-trends" class="tab-panel" hidden></div>
+        <div id="tab-export" class="tab-panel" hidden></div>
+      </section>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script type="module" src="js/app.js"></script>
+    <script src="js/sw-register.js"></script>
+  </body>
+</html>
