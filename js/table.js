@@ -14,6 +14,29 @@ const COLUMNS = [
   { key: "notes", label: "Notes" },
 ];
 
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+/** Monday (as "YYYY-MM-DD") of the week containing the given date string. */
+function mondayOf(dateStr) {
+  const d = new Date(`${dateStr}T00:00:00`);
+  const day = d.getDay();
+  const diffToMonday = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + diffToMonday);
+  return d.toISOString().slice(0, 10);
+}
+
+function addDays(dateStr, n) {
+  const d = new Date(`${dateStr}T00:00:00`);
+  d.setDate(d.getDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
+function formatWeekHeading(dateStr) {
+  const d = new Date(`${dateStr}T00:00:00`);
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${day}-${MONTHS[d.getMonth()]}-${d.getFullYear()}`;
+}
+
 function formatValue(row, key) {
   switch (key) {
     case "bed_time":
@@ -53,6 +76,11 @@ function editEntry(date) {
 export function initTableView(container) {
   container.innerHTML = `
     <div class="card">
+      <div class="week-nav">
+        <button type="button" id="week-prev" aria-label="Previous week">◀</button>
+        <div class="week-nav-label" id="week-label">w/c –</div>
+        <button type="button" id="week-next" aria-label="Next week">▶</button>
+      </div>
       <p class="hint" style="margin: 0 0 12px">Tap a row to open it for editing. Tap a column header to sort.</p>
       <p id="table-error" class="error-message" hidden></p>
       <div class="table-scroll">
@@ -63,13 +91,24 @@ export function initTableView(container) {
 
   const errorEl = container.querySelector("#table-error");
   const tableEl = container.querySelector("#diary-table");
+  const weekLabel = container.querySelector("#week-label");
+  const prevBtn = container.querySelector("#week-prev");
+  const nextBtn = container.querySelector("#week-next");
 
   let rows = [];
   let sortKey = "entry_date";
   let sortDir = 1;
+  let weekStart = mondayOf(new Date().toISOString().slice(0, 10));
+
+  function rowsForWeek() {
+    const weekEnd = addDays(weekStart, 6);
+    return rows.filter((r) => r.entry_date >= weekStart && r.entry_date <= weekEnd);
+  }
 
   function render() {
-    const sorted = [...rows].sort((a, b) => {
+    weekLabel.textContent = `w/c ${formatWeekHeading(weekStart)}`;
+
+    const sorted = [...rowsForWeek()].sort((a, b) => {
       const av = sortValue(a, sortKey);
       const bv = sortValue(b, sortKey);
       if (av < bv) return -1 * sortDir;
@@ -84,7 +123,7 @@ export function initTableView(container) {
 
     const body =
       sorted.length === 0
-        ? `<tr><td colspan="${COLUMNS.length}">No entries yet.</td></tr>`
+        ? `<tr><td colspan="${COLUMNS.length}">No entries this week.</td></tr>`
         : sorted
             .map(
               (row) =>
@@ -96,6 +135,16 @@ export function initTableView(container) {
 
     tableEl.innerHTML = head + body;
   }
+
+  prevBtn.addEventListener("click", () => {
+    weekStart = addDays(weekStart, -7);
+    render();
+  });
+
+  nextBtn.addEventListener("click", () => {
+    weekStart = addDays(weekStart, 7);
+    render();
+  });
 
   tableEl.addEventListener("click", (event) => {
     const th = event.target.closest("th[data-sort]");
@@ -122,6 +171,7 @@ export function initTableView(container) {
       return;
     }
     rows = (data ?? []).map((row) => ({ ...row, metrics: computeMetrics(row) }));
+    if (rows.length > 0) weekStart = mondayOf(rows[rows.length - 1].entry_date);
     render();
   }
 
