@@ -82,6 +82,7 @@ export function initExportView(container) {
         </div>
         <div class="toggle-group" id="range-shortcuts">
           <button type="button" id="range-all">All</button>
+          <button type="button" id="range-clear">Clear selected</button>
         </div>
         <div class="export-buttons">
           <button type="button" id="export-excel" class="primary">Download Excel (.xlsx)</button>
@@ -138,6 +139,12 @@ export function initExportView(container) {
     if (allRows.length === 0) return;
     fromInput.value = allRows[0].entry_date;
     toInput.value = allRows[allRows.length - 1].entry_date;
+    refresh();
+  });
+
+  container.querySelector("#range-clear").addEventListener("click", () => {
+    fromInput.value = "";
+    toInput.value = "";
     refresh();
   });
 
