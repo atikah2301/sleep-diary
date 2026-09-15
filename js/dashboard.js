@@ -18,6 +18,15 @@ function average(values) {
   return clean.reduce((a, b) => a + b, 0) / clean.length;
 }
 
+/** Formats a Date's local calendar date as "YYYY-MM-DD" (toISOString would convert to UTC
+ * first, silently shifting the date by a day whenever the local UTC offset is non-zero). */
+function toDateStr(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 function periodKey(entryDate, period) {
   if (period === "day") return entryDate;
   const d = new Date(`${entryDate}T00:00:00`);
@@ -25,7 +34,7 @@ function periodKey(entryDate, period) {
     const day = d.getDay();
     const diffToMonday = day === 0 ? -6 : 1 - day;
     d.setDate(d.getDate() + diffToMonday);
-    return d.toISOString().slice(0, 10);
+    return toDateStr(d);
   }
   return entryDate.slice(0, 7); // month: YYYY-MM
 }
