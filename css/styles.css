@@ -402,7 +402,7 @@ table.data-table tbody tr:hover {
 
 @media print {
   .sidebar,
-  .export-buttons,
+  .export-controls,
   header.app-header {
     display: none !important;
   }
