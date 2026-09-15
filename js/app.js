@@ -1,4 +1,4 @@
-import { signInWithPasscode, signOut, getSession, onAuthStateChange } from "./auth.js";
+import { signIn, signOut, getSession, onAuthStateChange } from "./auth.js";
 import { initEntryView } from "./entry.js";
 import { initDashboardView } from "./dashboard.js";
 import { initTableView } from "./table.js";
@@ -7,7 +7,7 @@ import { initExportView } from "./export.js";
 const viewLogin = document.querySelector("#view-login");
 const viewMain = document.querySelector("#view-main");
 const loginForm = document.querySelector("#login-form");
-const loginPasscode = document.querySelector("#login-passcode");
+const loginPassword = document.querySelector("#login-password");
 const loginError = document.querySelector("#login-error");
 const logoutButton = document.querySelector("#logout-button");
 const tabButtons = document.querySelectorAll("nav.tabs button[data-tab]");
@@ -55,16 +55,16 @@ function showLoggedIn() {
 function showLoggedOut() {
   viewMain.hidden = true;
   viewLogin.hidden = false;
-  loginPasscode.value = "";
+  loginPassword.value = "";
 }
 
 loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   loginError.hidden = true;
   try {
-    await signInWithPasscode(loginPasscode.value);
+    await signIn(loginPassword.value);
   } catch (err) {
-    loginError.textContent = "Incorrect passcode.";
+    loginError.textContent = "Incorrect password.";
     loginError.hidden = false;
   }
 });

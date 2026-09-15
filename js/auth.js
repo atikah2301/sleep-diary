@@ -1,12 +1,12 @@
 import { supabase } from "./supabase-client.js";
 import { SHARED_LOGIN_EMAIL } from "./config.js";
 
-/** The login screen only ever asks for a passcode; it becomes the password for
- * the one shared Supabase Auth user behind the scenes. */
-export async function signInWithPasscode(passcode) {
+/** The login screen asks for the one shared password, used for the one shared
+ * Supabase Auth user behind the scenes. */
+export async function signIn(password) {
   const { error } = await supabase.auth.signInWithPassword({
     email: SHARED_LOGIN_EMAIL,
-    password: passcode,
+    password,
   });
   if (error) throw error;
 }
