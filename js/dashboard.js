@@ -5,7 +5,9 @@ import { minutesSinceNoon, clockFromMinutesSinceNoon } from "./time.js";
 const CHART_COLORS = {
   efficiency: "#facc15",
   bed: "#a78bfa",
+  sleep: "#38bdf8",
   wake: "#4ade80",
+  rise: "#fb923c",
   grid: "#4c4696",
   text: "#b7b3e6",
 };
@@ -42,8 +44,6 @@ function groupByPeriod(rows, period) {
       efficiency: average(entries.map((e) => e.metrics.sleepEfficiencyPct)),
       totalSleepTimeMinutes: average(entries.map((e) => e.metrics.totalSleepTimeMinutes)),
       timeInBedMinutes: average(entries.map((e) => e.metrics.timeInBedMinutes)),
-      bedMinutesSinceNoon: average(entries.map((e) => minutesSinceNoon(e.bed_time.slice(0, 5)))),
-      wakeMinutesSinceNoon: average(entries.map((e) => minutesSinceNoon(e.wake_time.slice(0, 5)))),
     }));
 }
 
@@ -88,24 +88,17 @@ export function initDashboardView(container) {
     </div>
 
     <div class="card">
-      <div class="period-toggle" id="times-period-toggle">
-        <button type="button" data-period="day" class="active">Day</button>
-        <button type="button" data-period="week">Week</button>
-        <button type="button" data-period="month">Month</button>
-      </div>
       <div class="chart-wrap"><canvas id="times-chart"></canvas></div>
     </div>
   `;
 
   const tagFilter = container.querySelector("#tag-filter");
   const efficiencyToggle = container.querySelector("#efficiency-period-toggle");
-  const timesToggle = container.querySelector("#times-period-toggle");
   const efficiencyCanvas = container.querySelector("#efficiency-chart");
   const timesCanvas = container.querySelector("#times-chart");
 
   let rows = [];
   let efficiencyPeriod = "day";
-  let timesPeriod = "day";
   let efficiencyChart = null;
   let timesChart = null;
 
@@ -158,26 +151,42 @@ export function initDashboardView(container) {
   }
 
   function renderTimesChart(rowsForChart) {
-    const grouped = groupByPeriod(rowsForChart, timesPeriod);
+    const sorted = [...rowsForChart].sort((a, b) => (a.entry_date < b.entry_date ? -1 : 1));
     if (timesChart) timesChart.destroy();
     timesChart = new Chart(timesCanvas, {
       type: "line",
       data: {
-        labels: grouped.map((g) => g.key),
+        labels: sorted.map((r) => r.entry_date),
         datasets: [
           {
-            label: "Mean bed time",
-            data: grouped.map((g) => g.bedMinutesSinceNoon),
+            label: "Bed time",
+            data: sorted.map((r) => minutesSinceNoon(r.bed_time.slice(0, 5))),
             borderColor: CHART_COLORS.bed,
             backgroundColor: CHART_COLORS.bed,
             tension: 0.25,
             spanGaps: true,
           },
           {
-            label: "Mean wake time",
-            data: grouped.map((g) => g.wakeMinutesSinceNoon),
+            label: "Fell asleep",
+            data: sorted.map((r) => minutesSinceNoon(r.sleep_time.slice(0, 5))),
+            borderColor: CHART_COLORS.sleep,
+            backgroundColor: CHART_COLORS.sleep,
+            tension: 0.25,
+            spanGaps: true,
+          },
+          {
+            label: "Wake time",
+            data: sorted.map((r) => minutesSinceNoon(r.wake_time.slice(0, 5))),
             borderColor: CHART_COLORS.wake,
             backgroundColor: CHART_COLORS.wake,
+            tension: 0.25,
+            spanGaps: true,
+          },
+          {
+            label: "Out of bed",
+            data: sorted.map((r) => minutesSinceNoon(r.rising_time.slice(0, 5))),
+            borderColor: CHART_COLORS.rise,
+            backgroundColor: CHART_COLORS.rise,
             tension: 0.25,
             spanGaps: true,
           },
@@ -220,14 +229,6 @@ export function initDashboardView(container) {
     efficiencyToggle.querySelectorAll("button").forEach((b) => b.classList.toggle("active", b === btn));
     efficiencyPeriod = btn.dataset.period;
     renderEfficiencyChart(filteredRows());
-  });
-
-  timesToggle.addEventListener("click", (event) => {
-    const btn = event.target.closest("button[data-period]");
-    if (!btn) return;
-    timesToggle.querySelectorAll("button").forEach((b) => b.classList.toggle("active", b === btn));
-    timesPeriod = btn.dataset.period;
-    renderTimesChart(filteredRows());
   });
 
   tagFilter.addEventListener("change", renderAll);

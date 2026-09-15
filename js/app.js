@@ -1,6 +1,7 @@
 import { signInWithPasscode, signOut, getSession, onAuthStateChange } from "./auth.js";
 import { initEntryView } from "./entry.js";
 import { initDashboardView } from "./dashboard.js";
+import { initTableView } from "./table.js";
 import { initExportView } from "./export.js";
 
 const viewLogin = document.querySelector("#view-login");
@@ -14,16 +15,18 @@ const tabButtons = document.querySelectorAll("nav.tabs button[data-tab]");
 const panels = {
   entry: document.querySelector("#tab-entry"),
   trends: document.querySelector("#tab-trends"),
+  table: document.querySelector("#tab-table"),
   export: document.querySelector("#tab-export"),
 };
 
 const initializers = {
   entry: initEntryView,
   trends: initDashboardView,
+  table: initTableView,
   export: initExportView,
 };
 
-const initialized = { entry: false, trends: false, export: false };
+const initialized = { entry: false, trends: false, table: false, export: false };
 
 function showTab(tabName) {
   for (const [name, panel] of Object.entries(panels)) {
