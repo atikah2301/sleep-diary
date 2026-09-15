@@ -92,32 +92,36 @@ function renderPreviewTable(container, rows) {
 export function initExportView(container) {
   container.innerHTML = `
     <div class="card">
-      <label>Export range</label>
-      <div class="toggle-group" id="range-mode-toggle">
-        <button type="button" data-mode="all" class="active">All</button>
-        <button type="button" data-mode="dates">Dates</button>
-        <button type="button" data-mode="weeks">Weeks</button>
-      </div>
-      <div class="field-row" id="range-inputs" hidden>
-        <div>
-          <label for="range-from" id="range-from-label">From</label>
-          <input id="range-from" type="date" />
+      <div class="export-controls">
+        <label>Export range</label>
+        <div class="toggle-group" id="range-mode-toggle">
+          <button type="button" data-mode="all" class="active">All</button>
+          <button type="button" data-mode="dates">Dates</button>
+          <button type="button" data-mode="weeks">Weeks</button>
         </div>
-        <div>
-          <label for="range-to" id="range-to-label">To</label>
-          <input id="range-to" type="date" />
+        <div class="field-row" id="range-inputs" hidden>
+          <div>
+            <label for="range-from" id="range-from-label">From</label>
+            <input id="range-from" type="date" />
+          </div>
+          <div>
+            <label for="range-to" id="range-to-label">To</label>
+            <input id="range-to" type="date" />
+          </div>
         </div>
-      </div>
-      <div class="export-buttons">
-        <button type="button" id="export-excel" class="primary">Download Excel (.xlsx)</button>
-        <button type="button" id="export-pdf" class="secondary">Print / Save as PDF</button>
+        <div class="export-buttons">
+          <button type="button" id="export-excel" class="primary">Download Excel (.xlsx)</button>
+          <button type="button" id="export-pdf" class="secondary">Print / Save as PDF</button>
+        </div>
       </div>
       <p id="export-error" class="error-message" hidden></p>
+      <p class="hint" id="export-range-summary" style="margin: 0 0 12px"></p>
       <table class="export-preview" id="export-preview-table"></table>
     </div>
   `;
 
   const errorEl = container.querySelector("#export-error");
+  const summaryEl = container.querySelector("#export-range-summary");
   const modeToggle = container.querySelector("#range-mode-toggle");
   const rangeInputs = container.querySelector("#range-inputs");
   const fromInput = container.querySelector("#range-from");
@@ -153,7 +157,17 @@ export function initExportView(container) {
   }
 
   function refresh() {
-    renderPreviewTable(container, filteredRows());
+    const rows = filteredRows();
+    renderPreviewTable(container, rows);
+    if (rangeMode === "all") {
+      summaryEl.textContent = `Showing all entries (${rows.length}).`;
+    } else if (rows.length === 0) {
+      summaryEl.textContent = "Showing 0 entries in the selected range.";
+    } else {
+      const first = rows[0].entry_date;
+      const last = rows[rows.length - 1].entry_date;
+      summaryEl.textContent = `Showing ${rows.length} entries, ${first} to ${last}.`;
+    }
   }
 
   modeToggle.addEventListener("click", (event) => {
