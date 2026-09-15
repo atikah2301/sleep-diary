@@ -110,8 +110,11 @@ export function initTableView(container) {
   let weekStart = mondayOf(toDateStr(new Date()));
 
   function rowsForWeek() {
-    const weekEnd = addDays(weekStart, 6);
-    return rows.filter((r) => r.entry_date >= weekStart && r.entry_date <= weekEnd);
+    const byDate = new Map(rows.map((r) => [r.entry_date, r]));
+    return Array.from({ length: 7 }, (_, i) => {
+      const date = addDays(weekStart, i);
+      return byDate.get(date) ?? { entry_date: date, metrics: { sleepEfficiencyPct: null } };
+    });
   }
 
   function render() {
@@ -130,17 +133,14 @@ export function initTableView(container) {
       return `<th data-sort="${c.key}">${c.label}${arrow}</th>`;
     }).join("")}</tr>`;
 
-    const body =
-      sorted.length === 0
-        ? `<tr><td colspan="${COLUMNS.length}">No entries this week.</td></tr>`
-        : sorted
-            .map(
-              (row) =>
-                `<tr data-date="${row.entry_date}">${COLUMNS.map(
-                  (c) => `<td>${formatValue(row, c.key)}</td>`,
-                ).join("")}</tr>`,
-            )
-            .join("");
+    const body = sorted
+      .map(
+        (row) =>
+          `<tr data-date="${row.entry_date}">${COLUMNS.map(
+            (c) => `<td>${formatValue(row, c.key)}</td>`,
+          ).join("")}</tr>`,
+      )
+      .join("");
 
     tableEl.innerHTML = head + body;
   }
