@@ -417,4 +417,8 @@ table.data-table tbody tr:hover {
     border: 1px solid #999;
     color: #000;
   }
+
+  .table-scroll {
+    overflow: visible;
+  }
 }

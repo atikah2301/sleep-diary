@@ -91,7 +91,9 @@ export function initExportView(container) {
       </div>
       <p id="export-error" class="error-message" hidden></p>
       <p class="hint" id="export-range-summary" style="margin: 0 0 12px"></p>
-      <table class="export-preview" id="export-preview-table"></table>
+      <div class="table-scroll">
+        <table class="export-preview" id="export-preview-table"></table>
+      </div>
     </div>
   `;
 
