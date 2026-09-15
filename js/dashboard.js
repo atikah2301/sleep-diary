@@ -11,7 +11,10 @@ const CHART_COLORS = {
   rise: "#86efac",
   grid: "#475569",
   text: "#94a3b8",
+  monday: "#fbbf24",
 };
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 function average(values) {
   const clean = values.filter((v) => v !== null && v !== undefined && !Number.isNaN(v));
@@ -62,6 +65,29 @@ function formatMinutes(mins) {
   const h = Math.floor(mins / 60);
   const m = Math.round(mins % 60);
   return `${h}h ${String(m).padStart(2, "0")}m`;
+}
+
+function formatDayLabel(dateStr) {
+  const d = new Date(`${dateStr}T00:00:00`);
+  return `${MONTHS[d.getMonth()]}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function isMonday(dateStr) {
+  return new Date(`${dateStr}T00:00:00`).getDay() === 1;
+}
+
+/** X-axis tick options for a "day" resolution axis: labels as "Mon-DD" and Mondays
+ * highlighted in a distinct color, so weekly cycles are easier to spot at a glance.
+ * Non-day periods (week/month) keep the raw label and default color. */
+function xAxisTicksOptions(labels, period) {
+  if (period !== "day") return { color: CHART_COLORS.text };
+  return {
+    color: (ctx) => {
+      const label = ctx.tick ? labels[ctx.tick.value] : undefined;
+      return label && isMonday(label) ? CHART_COLORS.monday : CHART_COLORS.text;
+    },
+    callback: (value) => formatDayLabel(labels[value]),
+  };
 }
 
 export function initDashboardView(container) {
@@ -155,11 +181,12 @@ export function initDashboardView(container) {
 
   function renderEfficiencyChart(rowsForChart) {
     const grouped = groupByPeriod(rowsForChart, efficiencyPeriod);
+    const labels = grouped.map((g) => g.key);
     if (efficiencyChart) efficiencyChart.destroy();
     efficiencyChart = new Chart(efficiencyCanvas, {
       type: "line",
       data: {
-        labels: grouped.map((g) => g.key),
+        labels,
         datasets: [
           {
             label: "Sleep efficiency %",
@@ -180,7 +207,7 @@ export function initDashboardView(container) {
             grid: { color: CHART_COLORS.grid },
             ticks: { color: CHART_COLORS.text, callback: (v) => `${v}%` },
           },
-          x: { grid: { color: CHART_COLORS.grid }, ticks: { color: CHART_COLORS.text } },
+          x: { grid: { color: CHART_COLORS.grid }, ticks: xAxisTicksOptions(labels, efficiencyPeriod) },
         },
         plugins: { legend: { labels: { color: CHART_COLORS.text } } },
       },
@@ -189,11 +216,12 @@ export function initDashboardView(container) {
 
   function renderDurationChart(rowsForChart) {
     const grouped = groupByPeriod(rowsForChart, durationPeriod);
+    const labels = grouped.map((g) => g.key);
     if (durationChart) durationChart.destroy();
     durationChart = new Chart(durationCanvas, {
       type: "line",
       data: {
-        labels: grouped.map((g) => g.key),
+        labels,
         datasets: [
           {
             label: "Sleep duration",
@@ -213,7 +241,7 @@ export function initDashboardView(container) {
             grid: { color: CHART_COLORS.grid },
             ticks: { color: CHART_COLORS.text, callback: (v) => formatMinutes(v) },
           },
-          x: { grid: { color: CHART_COLORS.grid }, ticks: { color: CHART_COLORS.text } },
+          x: { grid: { color: CHART_COLORS.grid }, ticks: xAxisTicksOptions(labels, durationPeriod) },
         },
         plugins: {
           legend: { labels: { color: CHART_COLORS.text } },
@@ -229,11 +257,12 @@ export function initDashboardView(container) {
 
   function renderTimesChart(rowsForChart) {
     const sorted = [...rowsForChart].sort((a, b) => (a.entry_date < b.entry_date ? -1 : 1));
+    const labels = sorted.map((r) => r.entry_date);
     if (timesChart) timesChart.destroy();
     timesChart = new Chart(timesCanvas, {
       type: "line",
       data: {
-        labels: sorted.map((r) => r.entry_date),
+        labels,
         datasets: [
           {
             label: "Bed time",
@@ -279,7 +308,7 @@ export function initDashboardView(container) {
               callback: (v) => clockFromMinutesSinceNoon(v),
             },
           },
-          x: { grid: { color: CHART_COLORS.grid }, ticks: { color: CHART_COLORS.text } },
+          x: { grid: { color: CHART_COLORS.grid }, ticks: xAxisTicksOptions(labels, "day") },
         },
         plugins: {
           legend: { labels: { color: CHART_COLORS.text } },
@@ -295,11 +324,12 @@ export function initDashboardView(container) {
 
   function renderMinutesDiffChart(chart, canvas, rowsForChart, label, color, metricsKey) {
     const sorted = [...rowsForChart].sort((a, b) => (a.entry_date < b.entry_date ? -1 : 1));
+    const labels = sorted.map((r) => r.entry_date);
     if (chart) chart.destroy();
     return new Chart(canvas, {
       type: "line",
       data: {
-        labels: sorted.map((r) => r.entry_date),
+        labels,
         datasets: [
           {
             label,
@@ -319,7 +349,7 @@ export function initDashboardView(container) {
             grid: { color: CHART_COLORS.grid },
             ticks: { color: CHART_COLORS.text, callback: (v) => `${v} min` },
           },
-          x: { grid: { color: CHART_COLORS.grid }, ticks: { color: CHART_COLORS.text } },
+          x: { grid: { color: CHART_COLORS.grid }, ticks: xAxisTicksOptions(labels, "day") },
         },
         plugins: {
           legend: { labels: { color: CHART_COLORS.text } },
