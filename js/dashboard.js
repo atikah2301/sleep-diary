@@ -1,6 +1,7 @@
 import { supabase } from "./supabase-client.js";
 import { computeMetrics } from "./metrics.js";
 import { minutesSinceNoon, clockFromMinutesSinceNoon } from "./time.js";
+import { getGoals } from "./goals.js";
 
 const CHART_COLORS = {
   efficiency: "#fb923c",
@@ -12,6 +13,7 @@ const CHART_COLORS = {
   grid: "#475569",
   text: "#94a3b8",
   monday: "#fbbf24",
+  goal: "#e2e8f0",
 };
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -182,6 +184,7 @@ export function initDashboardView(container) {
   function renderEfficiencyChart(rowsForChart) {
     const grouped = groupByPeriod(rowsForChart, efficiencyPeriod);
     const labels = grouped.map((g) => g.key);
+    const { efficiencyGoalPct } = getGoals();
     if (efficiencyChart) efficiencyChart.destroy();
     efficiencyChart = new Chart(efficiencyCanvas, {
       type: "line",
@@ -196,6 +199,16 @@ export function initDashboardView(container) {
             tension: 0.25,
             spanGaps: true,
           },
+          {
+            label: "Goal",
+            data: labels.map(() => efficiencyGoalPct),
+            borderColor: CHART_COLORS.goal,
+            borderDash: [6, 4],
+            borderWidth: 1.5,
+            pointRadius: 0,
+            tension: 0,
+            fill: false,
+          },
         ],
       },
       options: {
@@ -209,7 +222,15 @@ export function initDashboardView(container) {
           },
           x: { grid: { color: CHART_COLORS.grid }, ticks: xAxisTicksOptions(labels, efficiencyPeriod) },
         },
-        plugins: { legend: { labels: { color: CHART_COLORS.text } } },
+        plugins: {
+          legend: { labels: { color: CHART_COLORS.text } },
+          tooltip: {
+            callbacks: {
+              label: (ctx) =>
+                `${ctx.dataset.label}: ${ctx.parsed.y === null ? "–" : ctx.parsed.y.toFixed(1) + "%"}`,
+            },
+          },
+        },
       },
     });
   }
@@ -217,6 +238,7 @@ export function initDashboardView(container) {
   function renderDurationChart(rowsForChart) {
     const grouped = groupByPeriod(rowsForChart, durationPeriod);
     const labels = grouped.map((g) => g.key);
+    const { durationGoalMinutes } = getGoals();
     if (durationChart) durationChart.destroy();
     durationChart = new Chart(durationCanvas, {
       type: "line",
@@ -230,6 +252,16 @@ export function initDashboardView(container) {
             backgroundColor: CHART_COLORS.duration,
             tension: 0.25,
             spanGaps: true,
+          },
+          {
+            label: "Goal",
+            data: labels.map(() => durationGoalMinutes),
+            borderColor: CHART_COLORS.goal,
+            borderDash: [6, 4],
+            borderWidth: 1.5,
+            pointRadius: 0,
+            tension: 0,
+            fill: false,
           },
         ],
       },
@@ -404,6 +436,8 @@ export function initDashboardView(container) {
   });
 
   tagFilter.addEventListener("change", renderAll);
+
+  window.addEventListener("goals-updated", () => renderAll());
 
   loadEntries();
 
