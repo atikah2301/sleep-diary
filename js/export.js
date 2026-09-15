@@ -126,7 +126,7 @@ export function initExportView(container) {
   function refresh() {
     const rows = filteredRows();
     renderPreviewTable(container, rows);
-    if (!fromInput.value && !toInput.value) {
+    if (rows.length === allRows.length) {
       summaryEl.textContent = `Showing all entries (${rows.length}).`;
     } else if (rows.length === 0) {
       summaryEl.textContent = "Showing 0 entries in the selected range.";
