@@ -35,7 +35,7 @@ export function initEntryView(container) {
       <label for="bed-time">I got into bed at...</label>
       <input id="bed-time" type="time" required />
 
-      <label>Fell asleep</label>
+      <label>I fell asleep at...</label>
       <div class="toggle-group" id="sleep-mode-toggle">
         <button type="button" data-mode="time" class="active">Exact time</button>
         <button type="button" data-mode="duration">Minutes to fall asleep</button>
