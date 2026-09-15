@@ -70,11 +70,7 @@ export function initExportView(container) {
     <div class="card">
       <div class="export-controls">
         <label>Export range</label>
-        <div class="toggle-group" id="range-mode-toggle">
-          <button type="button" data-mode="all" class="active">All</button>
-          <button type="button" data-mode="range">Range</button>
-        </div>
-        <div class="field-row" id="range-inputs" hidden>
+        <div class="field-row">
           <div>
             <label for="range-from">From</label>
             <input id="range-from" type="date" />
@@ -83,6 +79,9 @@ export function initExportView(container) {
             <label for="range-to">To</label>
             <input id="range-to" type="date" />
           </div>
+        </div>
+        <div class="toggle-group" id="range-shortcuts">
+          <button type="button" id="range-all">All</button>
         </div>
         <div class="export-buttons">
           <button type="button" id="export-excel" class="primary">Download Excel (.xlsx)</button>
@@ -97,19 +96,15 @@ export function initExportView(container) {
 
   const errorEl = container.querySelector("#export-error");
   const summaryEl = container.querySelector("#export-range-summary");
-  const modeToggle = container.querySelector("#range-mode-toggle");
-  const rangeInputs = container.querySelector("#range-inputs");
   const fromInput = container.querySelector("#range-from");
   const toInput = container.querySelector("#range-to");
 
   let allRows = [];
-  let rangeMode = "all";
 
   function filteredRows() {
-    if (rangeMode === "all") return allRows;
-
     const from = fromInput.value || null;
     const to = toInput.value || null;
+    if (!from && !to) return allRows;
 
     return allRows.filter((row) => {
       if (from && row.entry_date < from) return false;
@@ -119,7 +114,7 @@ export function initExportView(container) {
   }
 
   function rangeSuffix() {
-    if (rangeMode === "all") return "all";
+    if (!fromInput.value && !toInput.value) return "all";
     const rows = filteredRows();
     if (rows.length === 0) return "no-entries";
     return `${rows[0].entry_date}_to_${rows[rows.length - 1].entry_date}`;
@@ -128,7 +123,7 @@ export function initExportView(container) {
   function refresh() {
     const rows = filteredRows();
     renderPreviewTable(container, rows);
-    if (rangeMode === "all") {
+    if (!fromInput.value && !toInput.value) {
       summaryEl.textContent = `Showing all entries (${rows.length}).`;
     } else if (rows.length === 0) {
       summaryEl.textContent = "Showing 0 entries in the selected range.";
@@ -139,12 +134,10 @@ export function initExportView(container) {
     }
   }
 
-  modeToggle.addEventListener("click", (event) => {
-    const btn = event.target.closest("button[data-mode]");
-    if (!btn) return;
-    modeToggle.querySelectorAll("button").forEach((b) => b.classList.toggle("active", b === btn));
-    rangeMode = btn.dataset.mode;
-    rangeInputs.hidden = rangeMode === "all";
+  container.querySelector("#range-all").addEventListener("click", () => {
+    if (allRows.length === 0) return;
+    fromInput.value = allRows[0].entry_date;
+    toInput.value = allRows[allRows.length - 1].entry_date;
     refresh();
   });
 
