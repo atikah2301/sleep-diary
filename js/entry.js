@@ -1,6 +1,6 @@
 import { supabase } from "./supabase-client.js";
 import { computeMetrics } from "./metrics.js";
-import { minutesBetweenClocks, addMinutesToClock } from "./time.js";
+import { minutesBetweenClocks, addMinutesToClock, unwrapSequence } from "./time.js";
 
 function yesterdayISO() {
   const d = new Date();
@@ -18,6 +18,33 @@ function formatMinutes(mins) {
 function formatDateLabel(dateStr) {
   const d = new Date(`${dateStr}T00:00:00`);
   return d.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+}
+
+// Plausibility ceilings for each leg of the bed->sleep->wake->rise sequence. unwrapSequence()
+// always resolves times forward by adding a day, so a genuine ordering mistake (e.g. sleep
+// time typed before bed time) doesn't show up as "negative" - it shows up as an implausibly
+// long wrapped gap. These bounds are generous on purpose (long lie-ins, slow mornings) so they
+// only catch gaps no real night would produce.
+const ORDER_STEPS = [
+  { message: "Sleep time can't be before bed time.", maxGapMinutes: 12 * 60 },
+  { message: "Wake time can't be before sleep time.", maxGapMinutes: 20 * 60 },
+  { message: "Rising time can't be before wake time.", maxGapMinutes: 12 * 60 },
+];
+
+function getOrderIssues(bedTime, sleepTime, wakeTime, risingTime) {
+  const unwrapped = unwrapSequence([bedTime, sleepTime, wakeTime, risingTime]);
+  return ORDER_STEPS.filter((step, i) => unwrapped[i + 1] - unwrapped[i] > step.maxGapMinutes).map(
+    (step) => step.message,
+  );
+}
+
+function validateNonNegativeInteger(inputEl, errorEl) {
+  const raw = inputEl.value.trim();
+  const value = Number(raw);
+  const isValid = raw !== "" && Number.isInteger(value) && value >= 0;
+  errorEl.hidden = isValid;
+  if (!isValid) errorEl.textContent = "Must be a whole number, 0 or greater.";
+  return isValid;
 }
 
 const EMPTY_FORM = {
@@ -57,9 +84,11 @@ export function initEntryView(container) {
 
       <label for="awakenings-count">I woke up ? times in the night...</label>
       <input id="awakenings-count" type="number" min="0" step="1" value="0" />
+      <p id="awakenings-error" class="error-message" hidden></p>
 
       <label for="awake-minutes">I was awake in the night for ? minutes...</label>
       <input id="awake-minutes" type="number" min="0" step="1" value="0" />
+      <p id="awake-minutes-error" class="error-message" hidden></p>
 
       <label for="wake-time">My final wake time was...</label>
       <input id="wake-time" type="time" required />
@@ -107,7 +136,9 @@ export function initEntryView(container) {
   const sleepDurationInput = container.querySelector("#sleep-duration-input");
   const sleepHint = container.querySelector("#sleep-hint");
   const awakeningsInput = container.querySelector("#awakenings-count");
+  const awakeningsErrorEl = container.querySelector("#awakenings-error");
   const awakeMinutesInput = container.querySelector("#awake-minutes");
+  const awakeMinutesErrorEl = container.querySelector("#awake-minutes-error");
   const wakeTimeInput = container.querySelector("#wake-time");
   const risingTimeInput = container.querySelector("#rising-time");
   const tagSelect = container.querySelector("#tag-select");
@@ -135,6 +166,26 @@ export function initEntryView(container) {
     sleepTimeInput.hidden = mode !== "time";
     sleepDurationInput.hidden = mode !== "duration";
     updateSleepHint();
+    updateFormValidity();
+  }
+
+  function updateFormValidity() {
+    const awakeningsOk = validateNonNegativeInteger(awakeningsInput, awakeningsErrorEl);
+    const awakeMinutesOk = validateNonNegativeInteger(awakeMinutesInput, awakeMinutesErrorEl);
+
+    const bedTime = bedTimeInput.value;
+    const sleepTime = resolveSleepTime();
+    const wakeTime = wakeTimeInput.value;
+    const risingTime = risingTimeInput.value;
+    const orderIssues =
+      bedTime && sleepTime && wakeTime && risingTime
+        ? getOrderIssues(bedTime, sleepTime, wakeTime, risingTime)
+        : [];
+
+    errorEl.hidden = orderIssues.length === 0;
+    if (orderIssues.length > 0) errorEl.textContent = orderIssues.join(" ");
+
+    submitBtn.disabled = !awakeningsOk || !awakeMinutesOk || orderIssues.length > 0;
   }
 
   function updateSleepHint() {
@@ -182,8 +233,15 @@ export function initEntryView(container) {
     setSleepMode(btn.dataset.mode);
   });
 
-  [bedTimeInput, sleepTimeInput, sleepDurationInput].forEach((el) =>
-    el.addEventListener("input", updateSleepHint),
+  [bedTimeInput, sleepTimeInput, sleepDurationInput, wakeTimeInput, risingTimeInput].forEach((el) =>
+    el.addEventListener("input", () => {
+      updateSleepHint();
+      updateFormValidity();
+    }),
+  );
+
+  [awakeningsInput, awakeMinutesInput].forEach((el) =>
+    el.addEventListener("input", updateFormValidity),
   );
 
   function applyEntryToForm(entry) {
