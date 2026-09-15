@@ -1,30 +1,6 @@
 import { supabase } from "./supabase-client.js";
 import { computeMetrics } from "./metrics.js";
 
-/** Formats a Date's local calendar date as "YYYY-MM-DD" (toISOString would convert to UTC
- * first, silently shifting the date by a day whenever the local UTC offset is non-zero). */
-function toDateStr(d) {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
-
-/** Monday (as "YYYY-MM-DD") of the week containing the given date string. */
-function mondayOf(dateStr) {
-  const d = new Date(`${dateStr}T00:00:00`);
-  const day = d.getDay();
-  const diffToMonday = day === 0 ? -6 : 1 - day;
-  d.setDate(d.getDate() + diffToMonday);
-  return toDateStr(d);
-}
-
-function addDays(dateStr, n) {
-  const d = new Date(`${dateStr}T00:00:00`);
-  d.setDate(d.getDate() + n);
-  return toDateStr(d);
-}
-
 const COLUMNS = [
   { key: "entry_date", label: "Date" },
   { key: "bed_time", label: "Bed time" },
@@ -96,16 +72,15 @@ export function initExportView(container) {
         <label>Export range</label>
         <div class="toggle-group" id="range-mode-toggle">
           <button type="button" data-mode="all" class="active">All</button>
-          <button type="button" data-mode="dates">Dates</button>
-          <button type="button" data-mode="weeks">Weeks</button>
+          <button type="button" data-mode="range">Range</button>
         </div>
         <div class="field-row" id="range-inputs" hidden>
           <div>
-            <label for="range-from" id="range-from-label">From</label>
+            <label for="range-from">From</label>
             <input id="range-from" type="date" />
           </div>
           <div>
-            <label for="range-to" id="range-to-label">To</label>
+            <label for="range-to">To</label>
             <input id="range-to" type="date" />
           </div>
         </div>
@@ -126,8 +101,6 @@ export function initExportView(container) {
   const rangeInputs = container.querySelector("#range-inputs");
   const fromInput = container.querySelector("#range-from");
   const toInput = container.querySelector("#range-to");
-  const fromLabel = container.querySelector("#range-from-label");
-  const toLabel = container.querySelector("#range-to-label");
 
   let allRows = [];
   let rangeMode = "all";
@@ -135,12 +108,8 @@ export function initExportView(container) {
   function filteredRows() {
     if (rangeMode === "all") return allRows;
 
-    let from = fromInput.value || null;
-    let to = toInput.value || null;
-    if (rangeMode === "weeks") {
-      if (from) from = mondayOf(from);
-      if (to) to = addDays(mondayOf(to), 6);
-    }
+    const from = fromInput.value || null;
+    const to = toInput.value || null;
 
     return allRows.filter((row) => {
       if (from && row.entry_date < from) return false;
@@ -176,8 +145,6 @@ export function initExportView(container) {
     modeToggle.querySelectorAll("button").forEach((b) => b.classList.toggle("active", b === btn));
     rangeMode = btn.dataset.mode;
     rangeInputs.hidden = rangeMode === "all";
-    fromLabel.textContent = rangeMode === "weeks" ? "From (week commencing)" : "From";
-    toLabel.textContent = rangeMode === "weeks" ? "To (week commencing)" : "To";
     refresh();
   });
 
