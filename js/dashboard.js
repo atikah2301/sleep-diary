@@ -6,9 +6,7 @@ import { getGoals } from "./goals.js";
 const CHART_COLORS = {
   efficiency: "#fb923c",
   duration: "#38bdf8",
-  bed: "#f472b6",
   sleep: "#ef4444",
-  wake: "#22c55e",
   rise: "#86efac",
   grid: "#475569",
   text: "#94a3b8",
@@ -340,43 +338,34 @@ export function initDashboardView(container) {
   function renderTimesChart(rowsForChart) {
     const sorted = [...rowsForChart].sort((a, b) => (a.entry_date < b.entry_date ? -1 : 1));
     const labels = sorted.map((r) => r.entry_date);
+    const bedMins = sorted.map((r) => minutesSinceNoon(r.bed_time.slice(0, 5)));
+    const sleepMins = sorted.map((r) => minutesSinceNoon(r.sleep_time.slice(0, 5)));
+    const wakeMins = sorted.map((r) => minutesSinceNoon(r.wake_time.slice(0, 5)));
+    const riseMins = sorted.map((r) => minutesSinceNoon(r.rising_time.slice(0, 5)));
+
     if (timesChart) timesChart.destroy();
     timesChart = new Chart(timesCanvas, {
-      type: "line",
+      type: "bar",
       data: {
         labels,
         datasets: [
           {
-            label: "Bed time",
-            data: sorted.map((r) => minutesSinceNoon(r.bed_time.slice(0, 5))),
-            borderColor: CHART_COLORS.bed,
-            backgroundColor: CHART_COLORS.bed,
-            tension: 0.25,
-            spanGaps: true,
-          },
-          {
-            label: "Fell asleep",
-            data: sorted.map((r) => minutesSinceNoon(r.sleep_time.slice(0, 5))),
-            borderColor: CHART_COLORS.sleep,
+            label: "Time to fall asleep",
+            data: bedMins.map((b, i) => [b, sleepMins[i]]),
             backgroundColor: CHART_COLORS.sleep,
-            tension: 0.25,
-            spanGaps: true,
+            stack: "night",
           },
           {
-            label: "Wake time",
-            data: sorted.map((r) => minutesSinceNoon(r.wake_time.slice(0, 5))),
-            borderColor: CHART_COLORS.wake,
-            backgroundColor: CHART_COLORS.wake,
-            tension: 0.25,
-            spanGaps: true,
+            label: "Asleep",
+            data: sleepMins.map((s, i) => [s, wakeMins[i]]),
+            backgroundColor: CHART_COLORS.duration,
+            stack: "night",
           },
           {
-            label: "Out of bed",
-            data: sorted.map((r) => minutesSinceNoon(r.rising_time.slice(0, 5))),
-            borderColor: CHART_COLORS.rise,
+            label: "Time to get out of bed",
+            data: wakeMins.map((w, i) => [w, riseMins[i]]),
             backgroundColor: CHART_COLORS.rise,
-            tension: 0.25,
-            spanGaps: true,
+            stack: "night",
           },
         ],
       },
@@ -390,13 +379,20 @@ export function initDashboardView(container) {
               callback: (v) => clockFromMinutesSinceNoon(v),
             },
           },
-          x: { grid: { color: CHART_COLORS.grid }, ticks: xAxisTicksOptions(labels, "day") },
+          x: {
+            stacked: true,
+            grid: { color: CHART_COLORS.grid },
+            ticks: xAxisTicksOptions(labels, "day"),
+          },
         },
         plugins: {
           legend: { labels: { color: CHART_COLORS.text } },
           tooltip: {
             callbacks: {
-              label: (ctx) => `${ctx.dataset.label}: ${clockFromMinutesSinceNoon(ctx.parsed.y)}`,
+              label: (ctx) => {
+                const [from, to] = ctx.raw;
+                return `${ctx.dataset.label}: ${clockFromMinutesSinceNoon(from)} – ${clockFromMinutesSinceNoon(to)}`;
+              },
             },
           },
         },
