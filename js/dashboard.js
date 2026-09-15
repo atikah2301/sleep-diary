@@ -4,6 +4,7 @@ import { minutesSinceNoon, clockFromMinutesSinceNoon } from "./time.js";
 
 const CHART_COLORS = {
   efficiency: "#fb923c",
+  duration: "#38bdf8",
   bed: "#f472b6",
   sleep: "#ef4444",
   wake: "#22c55e",
@@ -98,7 +99,24 @@ export function initDashboardView(container) {
       </div>
 
       <div class="card">
+        <div class="period-toggle" id="duration-period-toggle">
+          <button type="button" data-period="day" class="active">Day</button>
+          <button type="button" data-period="week">Week</button>
+          <button type="button" data-period="month">Month</button>
+        </div>
+        <div class="chart-wrap"><canvas id="duration-chart"></canvas></div>
+      </div>
+
+      <div class="card">
         <div class="chart-wrap"><canvas id="times-chart"></canvas></div>
+      </div>
+
+      <div class="card">
+        <div class="chart-wrap"><canvas id="time-to-sleep-chart"></canvas></div>
+      </div>
+
+      <div class="card">
+        <div class="chart-wrap"><canvas id="time-to-rise-chart"></canvas></div>
       </div>
     </div>
   `;
@@ -106,12 +124,20 @@ export function initDashboardView(container) {
   const tagFilter = container.querySelector("#tag-filter");
   const efficiencyToggle = container.querySelector("#efficiency-period-toggle");
   const efficiencyCanvas = container.querySelector("#efficiency-chart");
+  const durationToggle = container.querySelector("#duration-period-toggle");
+  const durationCanvas = container.querySelector("#duration-chart");
   const timesCanvas = container.querySelector("#times-chart");
+  const timeToSleepCanvas = container.querySelector("#time-to-sleep-chart");
+  const timeToRiseCanvas = container.querySelector("#time-to-rise-chart");
 
   let rows = [];
   let efficiencyPeriod = "day";
   let efficiencyChart = null;
+  let durationPeriod = "day";
+  let durationChart = null;
   let timesChart = null;
+  let timeToSleepChart = null;
+  let timeToRiseChart = null;
 
   function filteredRows() {
     if (!tagFilter.value) return rows;
@@ -157,6 +183,46 @@ export function initDashboardView(container) {
           x: { grid: { color: CHART_COLORS.grid }, ticks: { color: CHART_COLORS.text } },
         },
         plugins: { legend: { labels: { color: CHART_COLORS.text } } },
+      },
+    });
+  }
+
+  function renderDurationChart(rowsForChart) {
+    const grouped = groupByPeriod(rowsForChart, durationPeriod);
+    if (durationChart) durationChart.destroy();
+    durationChart = new Chart(durationCanvas, {
+      type: "line",
+      data: {
+        labels: grouped.map((g) => g.key),
+        datasets: [
+          {
+            label: "Sleep duration",
+            data: grouped.map((g) => g.totalSleepTimeMinutes),
+            borderColor: CHART_COLORS.duration,
+            backgroundColor: CHART_COLORS.duration,
+            tension: 0.25,
+            spanGaps: true,
+          },
+        ],
+      },
+      options: {
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            min: 0,
+            grid: { color: CHART_COLORS.grid },
+            ticks: { color: CHART_COLORS.text, callback: (v) => formatMinutes(v) },
+          },
+          x: { grid: { color: CHART_COLORS.grid }, ticks: { color: CHART_COLORS.text } },
+        },
+        plugins: {
+          legend: { labels: { color: CHART_COLORS.text } },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => `${ctx.dataset.label}: ${formatMinutes(ctx.parsed.y)}`,
+            },
+          },
+        },
       },
     });
   }
@@ -227,11 +293,68 @@ export function initDashboardView(container) {
     });
   }
 
+  function renderMinutesDiffChart(chart, canvas, rowsForChart, label, color, metricsKey) {
+    const sorted = [...rowsForChart].sort((a, b) => (a.entry_date < b.entry_date ? -1 : 1));
+    if (chart) chart.destroy();
+    return new Chart(canvas, {
+      type: "line",
+      data: {
+        labels: sorted.map((r) => r.entry_date),
+        datasets: [
+          {
+            label,
+            data: sorted.map((r) => r.metrics[metricsKey]),
+            borderColor: color,
+            backgroundColor: color,
+            tension: 0.25,
+            spanGaps: true,
+          },
+        ],
+      },
+      options: {
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            min: 0,
+            grid: { color: CHART_COLORS.grid },
+            ticks: { color: CHART_COLORS.text, callback: (v) => `${v} min` },
+          },
+          x: { grid: { color: CHART_COLORS.grid }, ticks: { color: CHART_COLORS.text } },
+        },
+        plugins: {
+          legend: { labels: { color: CHART_COLORS.text } },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y} min`,
+            },
+          },
+        },
+      },
+    });
+  }
+
   function renderAll() {
     const filtered = filteredRows();
     renderSummary(filtered);
     renderEfficiencyChart(filtered);
+    renderDurationChart(filtered);
     renderTimesChart(filtered);
+    timeToSleepChart = renderMinutesDiffChart(
+      timeToSleepChart,
+      timeToSleepCanvas,
+      filtered,
+      "Time to fall asleep",
+      CHART_COLORS.sleep,
+      "sleepOnsetLatencyMinutes",
+    );
+    timeToRiseChart = renderMinutesDiffChart(
+      timeToRiseChart,
+      timeToRiseCanvas,
+      filtered,
+      "Time to get out of bed",
+      CHART_COLORS.rise,
+      "awakeAfterWakingMinutes",
+    );
   }
 
   efficiencyToggle.addEventListener("click", (event) => {
@@ -240,6 +363,14 @@ export function initDashboardView(container) {
     efficiencyToggle.querySelectorAll("button").forEach((b) => b.classList.toggle("active", b === btn));
     efficiencyPeriod = btn.dataset.period;
     renderEfficiencyChart(filteredRows());
+  });
+
+  durationToggle.addEventListener("click", (event) => {
+    const btn = event.target.closest("button[data-period]");
+    if (!btn) return;
+    durationToggle.querySelectorAll("button").forEach((b) => b.classList.toggle("active", b === btn));
+    durationPeriod = btn.dataset.period;
+    renderDurationChart(filteredRows());
   });
 
   tagFilter.addEventListener("change", renderAll);
