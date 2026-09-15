@@ -3,6 +3,7 @@ import { initEntryView } from "./entry.js";
 import { initDashboardView } from "./dashboard.js";
 import { initTableView } from "./table.js";
 import { initExportView } from "./export.js";
+import { initGoalsView } from "./goals.js";
 
 const viewLogin = document.querySelector("#view-login");
 const viewMain = document.querySelector("#view-main");
@@ -17,6 +18,7 @@ const panels = {
   trends: document.querySelector("#tab-trends"),
   table: document.querySelector("#tab-table"),
   export: document.querySelector("#tab-export"),
+  goals: document.querySelector("#tab-goals"),
 };
 
 const initializers = {
@@ -24,9 +26,10 @@ const initializers = {
   trends: initDashboardView,
   table: initTableView,
   export: initExportView,
+  goals: initGoalsView,
 };
 
-const initialized = { entry: false, trends: false, table: false, export: false };
+const initialized = { entry: false, trends: false, table: false, export: false, goals: false };
 
 function showTab(tabName) {
   for (const [name, panel] of Object.entries(panels)) {
