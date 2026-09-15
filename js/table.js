@@ -13,8 +13,10 @@ const COLUMNS = [
   { key: "rising_time", label: "Up" },
   { key: "timeToRise", label: "Time to rise (min)", optional: "timeToRise" },
   { key: "tag", label: "Tag" },
-  { key: "timeInBedHm", label: "Time in bed", optional: "conversions" },
-  { key: "totalSleepTimeHm", label: "Total sleep time", optional: "conversions" },
+  { key: "timeInBedMinutes", label: "Time in bed (min)" },
+  { key: "timeInBedHm", label: "Time in bed (h/m)", optional: "conversions" },
+  { key: "totalSleepTimeMinutes", label: "Total sleep time (min)" },
+  { key: "totalSleepTimeHm", label: "Total sleep time (h/m)", optional: "conversions" },
   { key: "sleepEfficiencyPct", label: "Efficiency" },
   { key: "notes", label: "Notes" },
 ];
@@ -80,6 +82,10 @@ function formatValue(row, key) {
       return row.metrics.sleepOnsetLatencyMinutes ?? "";
     case "timeToRise":
       return row.metrics.awakeAfterWakingMinutes ?? "";
+    case "timeInBedMinutes":
+      return row.metrics.timeInBedMinutes ?? "";
+    case "totalSleepTimeMinutes":
+      return row.metrics.totalSleepTimeMinutes ?? "";
     case "timeInBedHm":
       return formatHoursMinutes(row.metrics.timeInBedMinutes);
     case "totalSleepTimeHm":
@@ -103,6 +109,10 @@ function sortValue(row, key) {
       return row.metrics.sleepOnsetLatencyMinutes ?? -Infinity;
     case "timeToRise":
       return row.metrics.awakeAfterWakingMinutes ?? -Infinity;
+    case "timeInBedMinutes":
+      return row.metrics.timeInBedMinutes ?? -Infinity;
+    case "totalSleepTimeMinutes":
+      return row.metrics.totalSleepTimeMinutes ?? -Infinity;
     case "timeInBedHm":
       return row.metrics.timeInBedMinutes ?? -Infinity;
     case "totalSleepTimeHm":
