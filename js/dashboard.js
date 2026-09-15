@@ -3,13 +3,13 @@ import { computeMetrics } from "./metrics.js";
 import { minutesSinceNoon, clockFromMinutesSinceNoon } from "./time.js";
 
 const CHART_COLORS = {
-  efficiency: "#facc15",
-  bed: "#a78bfa",
-  sleep: "#38bdf8",
-  wake: "#4ade80",
-  rise: "#fb923c",
-  grid: "#4c4696",
-  text: "#b7b3e6",
+  efficiency: "#fb923c",
+  bed: "#f472b6",
+  sleep: "#ef4444",
+  wake: "#22c55e",
+  rise: "#86efac",
+  grid: "#475569",
+  text: "#94a3b8",
 };
 
 function average(values) {
