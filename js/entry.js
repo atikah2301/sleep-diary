@@ -29,10 +29,10 @@ const EMPTY_FORM = {
 export function initEntryView(container) {
   container.innerHTML = `
     <form id="entry-form" class="card">
-      <label for="entry-date">Date (night you got into bed)</label>
+      <label for="entry-date">For the night of...</label>
       <input id="entry-date" type="date" required />
 
-      <label for="bed-time">Got into bed</label>
+      <label for="bed-time">I got into bed at...</label>
       <input id="bed-time" type="time" required />
 
       <label>Fell asleep</label>
@@ -44,23 +44,23 @@ export function initEntryView(container) {
       <input id="sleep-duration-input" type="number" min="0" step="1" placeholder="Minutes" hidden />
       <p id="sleep-hint" class="hint"></p>
 
-      <label for="awakenings-count">Times woken in the night</label>
+      <label for="awakenings-count">I woke up ? times in the night...</label>
       <input id="awakenings-count" type="number" min="0" step="1" value="0" />
 
-      <label for="awake-minutes">Total minutes awake during those wake-ups</label>
+      <label for="awake-minutes">I was awake in the night for ? minutes...</label>
       <input id="awake-minutes" type="number" min="0" step="1" value="0" />
 
-      <label for="wake-time">Final wake time</label>
+      <label for="wake-time">My final wake time was...</label>
       <input id="wake-time" type="time" required />
 
-      <label for="rising-time">Got out of bed</label>
+      <label for="rising-time">I got out of bed at...</label>
       <input id="rising-time" type="time" required />
 
-      <label for="tag-select">Why that wake time? (optional)</label>
+      <label for="tag-select">My wake time was affected by... (optional)</label>
       <select id="tag-select">
-        <option value="">Alarm, no particular reason</option>
-        <option value="Office">Office — needed to wake early for work</option>
-        <option value="WFH">WFH — working from home, probably not waking as early</option>
+        <option value="">Alarm set for other reason</option>
+        <option value="Office">Office — waking earlier to commute</option>
+        <option value="WFH">WFH — waking before 9am</option>
         <option value="No alarm">No alarm — no plan the next day</option>
       </select>
 
