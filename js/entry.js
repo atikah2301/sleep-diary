@@ -34,8 +34,9 @@ const EMPTY_FORM = {
 export function initEntryView(container) {
   container.innerHTML = `
     <div id="entry-mode-banner" class="mode-banner" hidden>
-      <span>Editing entry for <strong id="entry-mode-date"></strong></span>
-      <button type="button" id="entry-mode-cancel" class="link-button">Cancel / New entry</button>
+      <p class="mode-banner-text">Editing entry for <strong id="entry-mode-date"></strong></p>
+      <button type="button" id="entry-mode-cancel" class="mode-banner-cancel">Cancel edit</button>
+      <p id="entry-mode-cancel-feedback" class="mode-banner-feedback" hidden>Entry left unchanged.</p>
     </div>
 
     <form id="entry-form" class="card">
@@ -118,8 +119,13 @@ export function initEntryView(container) {
   const modeBanner = container.querySelector("#entry-mode-banner");
   const modeDateEl = container.querySelector("#entry-mode-date");
   const modeCancelBtn = container.querySelector("#entry-mode-cancel");
+  const cancelFeedbackEl = container.querySelector("#entry-mode-cancel-feedback");
+  const entryTabButton = document.querySelector('nav.tabs button[data-tab="entry"]');
 
   let sleepMode = "time";
+  let isEditingMode = false;
+  let showingCancelFeedback = false;
+  let cancelFeedbackTimer = null;
 
   function setSleepMode(mode) {
     sleepMode = mode;
@@ -195,9 +201,14 @@ export function initEntryView(container) {
   }
 
   function setEditMode(existing, date) {
-    modeBanner.hidden = !existing;
-    if (existing) modeDateEl.textContent = formatDateLabel(date);
-    submitBtn.textContent = existing ? "Update entry" : "Save entry";
+    isEditingMode = Boolean(existing);
+    if (entryTabButton) {
+      entryTabButton.textContent = isEditingMode ? "Edit entry" : "New entry";
+      entryTabButton.classList.toggle("editing", isEditingMode);
+    }
+    submitBtn.textContent = isEditingMode ? "Update entry" : "Save entry";
+    if (isEditingMode) modeDateEl.textContent = formatDateLabel(date);
+    if (!showingCancelFeedback) modeBanner.hidden = !isEditingMode;
   }
 
   async function loadEntryForDate(date) {
@@ -241,11 +252,30 @@ export function initEntryView(container) {
     summaryEl.hidden = false;
   }
 
-  dateInput.addEventListener("change", () => loadEntryForDate(dateInput.value));
-
-  modeCancelBtn.addEventListener("click", () => {
-    dateInput.value = yesterdayISO();
+  dateInput.addEventListener("change", () => {
+    showingCancelFeedback = false;
+    clearTimeout(cancelFeedbackTimer);
+    cancelFeedbackEl.hidden = true;
+    modeCancelBtn.hidden = false;
     loadEntryForDate(dateInput.value);
+  });
+
+  modeCancelBtn.addEventListener("click", async () => {
+    showingCancelFeedback = true;
+    clearTimeout(cancelFeedbackTimer);
+    modeCancelBtn.hidden = true;
+    cancelFeedbackEl.hidden = false;
+    modeBanner.hidden = false;
+
+    dateInput.value = yesterdayISO();
+    await loadEntryForDate(dateInput.value);
+
+    cancelFeedbackTimer = setTimeout(() => {
+      showingCancelFeedback = false;
+      cancelFeedbackEl.hidden = true;
+      modeCancelBtn.hidden = false;
+      modeBanner.hidden = !isEditingMode;
+    }, 2000);
   });
 
   form.addEventListener("submit", async (event) => {
