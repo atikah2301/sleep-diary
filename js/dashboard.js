@@ -80,15 +80,28 @@ function isMonday(dateStr) {
 
 /** X-axis tick options for a "day" resolution axis: labels as "Mon-DD" and Mondays
  * highlighted in a distinct color, so weekly cycles are easier to spot at a glance.
- * Non-day periods (week/month) keep the raw label and default color. */
+ * Non-day periods (week/month) keep the raw label and default color.
+ *
+ * autoSkip is disabled and the skip step is computed from the label count alone (not
+ * per-canvas pixel width) — otherwise Chart.js picks a different density on each chart
+ * depending on how much plot width its own y-axis labels leave (e.g. wider "7h 30m" duration
+ * ticks vs narrower "90%" efficiency ticks), so charts end up showing labels at different
+ * frequencies even though they cover the same dates. A fixed step keeps every day chart in
+ * sync, and Mondays are always shown regardless of step so the highlight never gets skipped. */
 function xAxisTicksOptions(labels, period) {
   if (period !== "day") return { color: CHART_COLORS.text };
+  const step = Math.max(1, Math.ceil(labels.length / 12));
   return {
+    autoSkip: false,
     color: (ctx) => {
       const label = ctx.tick ? labels[ctx.tick.value] : undefined;
       return label && isMonday(label) ? CHART_COLORS.monday : CHART_COLORS.text;
     },
-    callback: (value) => formatDayLabel(labels[value]),
+    callback: (value) => {
+      const label = labels[value];
+      if (!label) return "";
+      return isMonday(label) || value % step === 0 ? formatDayLabel(label) : "";
+    },
   };
 }
 
