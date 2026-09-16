@@ -413,6 +413,13 @@ button.secondary {
   margin-top: 4px;
 }
 
+.chart-title {
+  margin: 0 0 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
 .chart-wrap {
   position: relative;
   height: 260px;
