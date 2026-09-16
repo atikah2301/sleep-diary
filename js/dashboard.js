@@ -15,6 +15,7 @@ const CHART_COLORS = {
   underslept: "#f87171",
   normalSleep: "#34d399",
   overslept: "#fbbf24",
+  nap: "#c084fc",
 };
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -93,6 +94,17 @@ function groupBucketsByPeriod(rows, period, goalMinutes) {
   return [...groups.entries()]
     .sort(([a], [b]) => (a < b ? -1 : 1))
     .map(([key, counts]) => ({ key, ...counts }));
+}
+
+function groupNapCountByPeriod(rows, period) {
+  const groups = new Map();
+  for (const row of rows) {
+    const key = periodKey(row.entry_date, period);
+    groups.set(key, (groups.get(key) ?? 0) + (row.nap_count ?? 0));
+  }
+  return [...groups.entries()]
+    .sort(([a], [b]) => (a < b ? -1 : 1))
+    .map(([key, count]) => ({ key, count }));
 }
 
 function groupByCategory(rows, categoryKey, categories, defaultValue, goalMinutes) {
@@ -233,6 +245,11 @@ export function initDashboardView(container) {
       </div>
 
       <div class="card">
+        <h2 class="chart-title">Naps per week</h2>
+        <div class="chart-wrap"><canvas id="naps-chart"></canvas></div>
+      </div>
+
+      <div class="card">
         <h2 class="chart-title">Wake reason breakdown</h2>
         <div class="chart-wrap"><canvas id="tag-breakdown-chart"></canvas></div>
       </div>
@@ -254,6 +271,7 @@ export function initDashboardView(container) {
   const timeToRiseCanvas = container.querySelector("#time-to-rise-chart");
   const consistencyToggle = container.querySelector("#consistency-period-toggle");
   const consistencyCanvas = container.querySelector("#consistency-chart");
+  const napsCanvas = container.querySelector("#naps-chart");
   const tagBreakdownCanvas = container.querySelector("#tag-breakdown-chart");
   const locationBreakdownCanvas = container.querySelector("#location-breakdown-chart");
 
@@ -267,6 +285,7 @@ export function initDashboardView(container) {
   let timeToRiseChart = null;
   let consistencyPeriod = "week";
   let consistencyChart = null;
+  let napsChart = null;
   let tagBreakdownChart = null;
   let locationBreakdownChart = null;
 
@@ -577,6 +596,44 @@ export function initDashboardView(container) {
     });
   }
 
+  function renderNapsChart(rowsForChart) {
+    const grouped = groupNapCountByPeriod(rowsForChart, "week");
+    const labels = grouped.map((g) => g.key);
+    if (napsChart) napsChart.destroy();
+    napsChart = new Chart(napsCanvas, {
+      type: "bar",
+      data: {
+        labels,
+        datasets: [
+          {
+            label: "Naps",
+            data: grouped.map((g) => g.count),
+            backgroundColor: CHART_COLORS.nap,
+          },
+        ],
+      },
+      options: {
+        maintainAspectRatio: false,
+        scales: {
+          x: { grid: { color: CHART_COLORS.grid }, ticks: xAxisTicksOptions(labels, "week") },
+          y: {
+            beginAtZero: true,
+            ticks: { color: CHART_COLORS.text, precision: 0 },
+            grid: { color: CHART_COLORS.grid },
+          },
+        },
+        plugins: {
+          legend: { labels: { color: CHART_COLORS.text } },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y} nap${ctx.parsed.y === 1 ? "" : "s"}`,
+            },
+          },
+        },
+      },
+    });
+  }
+
   function renderBreakdownChart(chart, canvas, grouped, labels) {
     if (chart) chart.destroy();
     return new Chart(canvas, {
@@ -671,6 +728,7 @@ export function initDashboardView(container) {
     renderDurationChart(filtered);
     renderTimesChart(filtered);
     renderConsistencyChart(filtered);
+    renderNapsChart(filtered);
     renderTagBreakdownChart(rows);
     renderLocationBreakdownChart(rows);
     timeToSleepChart = renderMinutesDiffChart(

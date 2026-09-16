@@ -71,6 +71,8 @@ const EMPTY_FORM = {
   rising_time: "",
   tag: "",
   sleep_location: DEFAULT_SLEEP_LOCATION,
+  nap_count: "0",
+  nap_minutes: "0",
   notes: "",
 };
 
@@ -142,6 +144,14 @@ export function initEntryView(container) {
         <option value="Other">Other</option>
       </select>
 
+      <label for="nap-count">Before bed time, I took ? naps...</label>
+      <input id="nap-count" type="number" min="0" step="1" value="0" />
+      <p id="nap-count-error" class="error-message" hidden></p>
+
+      <label for="nap-minutes">I napped for a total of ? minutes...</label>
+      <input id="nap-minutes" type="number" min="0" step="1" value="0" />
+      <p id="nap-minutes-error" class="error-message" hidden></p>
+
       <label for="notes">Notes (optional)</label>
       <textarea id="notes" rows="2"></textarea>
 
@@ -182,6 +192,10 @@ export function initEntryView(container) {
   const risingTimeInput = container.querySelector("#rising-time");
   const tagSelect = container.querySelector("#tag-select");
   const sleepLocationSelect = container.querySelector("#sleep-location-select");
+  const napCountInput = container.querySelector("#nap-count");
+  const napCountErrorEl = container.querySelector("#nap-count-error");
+  const napMinutesInput = container.querySelector("#nap-minutes");
+  const napMinutesErrorEl = container.querySelector("#nap-minutes-error");
   const notesInput = container.querySelector("#notes");
   const form = container.querySelector("#entry-form");
   const submitBtn = container.querySelector("#entry-submit");
@@ -223,6 +237,8 @@ export function initEntryView(container) {
   function updateFormValidity() {
     const awakeningsOk = validateNonNegativeInteger(awakeningsInput, awakeningsErrorEl);
     const awakeMinutesOk = validateNonNegativeInteger(awakeMinutesInput, awakeMinutesErrorEl);
+    const napCountOk = validateNonNegativeInteger(napCountInput, napCountErrorEl);
+    const napMinutesOk = validateNonNegativeInteger(napMinutesInput, napMinutesErrorEl);
 
     const bedTime = bedTimeInput.value;
     const sleepTime = resolveSleepTime();
@@ -236,7 +252,8 @@ export function initEntryView(container) {
     errorEl.hidden = orderIssues.length === 0;
     if (orderIssues.length > 0) errorEl.textContent = orderIssues.join(" ");
 
-    submitBtn.disabled = !awakeningsOk || !awakeMinutesOk || orderIssues.length > 0;
+    submitBtn.disabled =
+      !awakeningsOk || !awakeMinutesOk || !napCountOk || !napMinutesOk || orderIssues.length > 0;
   }
 
   function snapshotFromForm() {
@@ -249,6 +266,8 @@ export function initEntryView(container) {
       rising_time: risingTimeInput.value,
       tag: tagSelect.value,
       sleep_location: sleepLocationSelect.value,
+      nap_count: napCountInput.value,
+      nap_minutes: napMinutesInput.value,
       notes: notesInput.value,
     };
   }
@@ -333,7 +352,7 @@ export function initEntryView(container) {
     }),
   );
 
-  [awakeningsInput, awakeMinutesInput].forEach((el) =>
+  [awakeningsInput, awakeMinutesInput, napCountInput, napMinutesInput].forEach((el) =>
     el.addEventListener("input", () => {
       updateFormValidity();
       updateEditingState();
@@ -353,6 +372,8 @@ export function initEntryView(container) {
     risingTimeInput.value = entry.rising_time?.slice(0, 5) ?? "";
     tagSelect.value = entry.tag ?? "";
     sleepLocationSelect.value = entry.sleep_location ?? DEFAULT_SLEEP_LOCATION;
+    napCountInput.value = entry.nap_count ?? 0;
+    napMinutesInput.value = entry.nap_minutes ?? 0;
     notesInput.value = entry.notes ?? "";
     setSleepMode("time");
     updateSleepHint();
@@ -489,6 +510,8 @@ export function initEntryView(container) {
       rising_time: risingTimeInput.value,
       tag: tagSelect.value || null,
       sleep_location: sleepLocationSelect.value,
+      nap_count: Number(napCountInput.value || 0),
+      nap_minutes: Number(napMinutesInput.value || 0),
       notes: notesInput.value || null,
     };
 
