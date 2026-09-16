@@ -2,6 +2,7 @@
 -- See README.md "Setup" for the full one-time setup checklist this fits into.
 
 create type sleep_tag as enum ('Office', 'WFH', 'No alarm');
+create type sleep_location_type as enum ('In my bed, at home', 'In a bed, elsewhere', 'On the sofa', 'Other');
 
 create table diary_entries (
   id bigint generated always as identity primary key,
@@ -13,6 +14,7 @@ create table diary_entries (
   wake_time time not null,                    -- final wake time
   rising_time time not null,                  -- got out of bed
   tag sleep_tag,                              -- null = generic alarm-clock wake, no particular reason
+  sleep_location sleep_location_type not null default 'In my bed, at home',
   notes text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
