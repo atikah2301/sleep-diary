@@ -15,6 +15,8 @@ const COLUMNS = [
   { key: "timeToRise", label: "Time to rise (min)", optional: "timeToRise" },
   { key: "tag", label: "Tag" },
   { key: "sleep_location", label: "Location" },
+  { key: "nap_count", label: "Naps" },
+  { key: "nap_minutes", label: "Nap min" },
   { key: "timeInBedMinutes", label: "Time in bed (min)" },
   { key: "timeInBedHm", label: "Time in bed (h/m)", optional: "conversions" },
   { key: "totalSleepTimeMinutes", label: "Total sleep time (min)" },

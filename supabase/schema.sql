@@ -15,6 +15,8 @@ create table diary_entries (
   rising_time time not null,                  -- got out of bed
   tag sleep_tag,                              -- null = generic alarm-clock wake, no particular reason
   sleep_location sleep_location_type not null default 'In my bed, at home',
+  nap_count integer not null default 0,
+  nap_minutes integer not null default 0,     -- total minutes napped, across all naps
   notes text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
