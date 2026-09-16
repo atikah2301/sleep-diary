@@ -174,6 +174,13 @@ export function initTableView(container) {
   let sortDir = 1;
   let weekStart = mondayOf(toDateStr(new Date()));
 
+  const tableTabButton = document.querySelector('nav.tabs button[data-tab="table"]');
+  const jumpDate = tableTabButton?.dataset.jumpDate ?? null;
+  if (jumpDate) {
+    weekStart = mondayOf(jumpDate);
+    delete tableTabButton.dataset.jumpDate;
+  }
+
   function activeColumns() {
     return COLUMNS.filter((c) => {
       if (c.optional === "day") return dayToggle.checked;
@@ -266,7 +273,7 @@ export function initTableView(container) {
       return;
     }
     rows = (data ?? []).map((row) => ({ ...row, metrics: computeMetrics(row) }));
-    if (rows.length > 0) weekStart = mondayOf(rows[rows.length - 1].entry_date);
+    if (jumpDate === null && rows.length > 0) weekStart = mondayOf(rows[rows.length - 1].entry_date);
     render();
   }
 
