@@ -96,6 +96,7 @@ export function initEntryView(container) {
         You have unsaved changes for this entry. Save or complete it before navigating to another entry.
       </p>
       <button type="button" id="entry-clear-inputs" class="secondary">Clear inputs</button>
+      <button type="button" id="entry-show-in-table" class="secondary" hidden>Show in Table</button>
 
       <label for="bed-time">I got into bed at...</label>
       <input id="bed-time" type="time" required />
@@ -195,6 +196,7 @@ export function initEntryView(container) {
   const dateTodayBtn = container.querySelector("#entry-date-today");
   const navBlockedMsgEl = container.querySelector("#entry-nav-blocked-msg");
   const clearInputsBtn = container.querySelector("#entry-clear-inputs");
+  const showInTableBtn = container.querySelector("#entry-show-in-table");
 
   let sleepMode = "time";
   let savedSnapshot = null;
@@ -272,6 +274,7 @@ export function initEntryView(container) {
     datePrevBtn.hidden = !showDateNav;
     dateNextBtn.hidden = !showDateNav;
     dateTodayBtn.hidden = !showDateNav;
+    showInTableBtn.hidden = !(hasExistingEntry && !isDirty);
     if (!hasUnsavedNewEntryData()) navBlockedMsgEl.hidden = true;
   }
 
@@ -432,6 +435,13 @@ export function initEntryView(container) {
     applyEntryToForm(EMPTY_FORM);
     updateFormValidity();
     updateEditingState();
+  });
+
+  showInTableBtn.addEventListener("click", () => {
+    const tableTabButton = document.querySelector('nav.tabs button[data-tab="table"]');
+    if (!tableTabButton) return;
+    tableTabButton.dataset.jumpDate = dateInput.value;
+    tableTabButton.click();
   });
 
   modeCancelBtn.addEventListener("click", () => {
