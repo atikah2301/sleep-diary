@@ -1,5 +1,6 @@
 import { supabase } from "./supabase-client.js";
 import { computeMetrics } from "./metrics.js";
+import { addTopScrollbar } from "./table-scroll-sync.js";
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -75,16 +76,23 @@ function downloadExcel(rows, filenameSuffix, columns) {
   XLSX.writeFile(workbook, `sleep-diary-${filenameSuffix}.xlsx`);
 }
 
+function stickyClass(key) {
+  if (key === "entry_date") return "sticky-col sticky-col-1";
+  if (key === "dayOfWeek") return "sticky-col sticky-col-2";
+  return "";
+}
+
 function renderPreviewTable(container, rows, columns) {
   const table = container.querySelector("#export-preview-table");
   if (rows.length === 0) {
     table.innerHTML = "<tr><td>No entries yet.</td></tr>";
     return;
   }
-  const head = `<tr>${columns.map((c) => `<th>${c.label}</th>`).join("")}</tr>`;
+  const head = `<tr>${columns.map((c) => `<th class="${stickyClass(c.key)}">${c.label}</th>`).join("")}</tr>`;
   const body = rows
     .map(
-      (row) => `<tr>${columns.map((c) => `<td>${row[c.key] ?? ""}</td>`).join("")}</tr>`,
+      (row) =>
+        `<tr>${columns.map((c) => `<td class="${stickyClass(c.key)}">${row[c.key] ?? ""}</td>`).join("")}</tr>`,
     )
     .join("");
   table.innerHTML = head + body;
@@ -137,6 +145,8 @@ export function initExportView(container) {
   const conversionsToggle = container.querySelector("#toggle-conversions");
   const timeToSleepToggle = container.querySelector("#toggle-time-to-sleep");
   const timeToRiseToggle = container.querySelector("#toggle-time-to-rise");
+
+  addTopScrollbar(container.querySelector(".table-scroll"), container.querySelector("#export-preview-table"));
 
   let allRows = [];
 
