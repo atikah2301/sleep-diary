@@ -90,6 +90,7 @@ export function initEntryView(container) {
       <p id="entry-nav-blocked-msg" class="error-message" hidden>
         You have unsaved changes for this entry. Save or complete it before navigating to another entry.
       </p>
+      <button type="button" id="entry-clear-inputs" class="secondary">Clear inputs</button>
 
       <label for="bed-time">I got into bed at...</label>
       <input id="bed-time" type="time" required />
@@ -187,6 +188,7 @@ export function initEntryView(container) {
   const datePrevBtn = container.querySelector("#entry-date-prev");
   const dateNextBtn = container.querySelector("#entry-date-next");
   const navBlockedMsgEl = container.querySelector("#entry-nav-blocked-msg");
+  const clearInputsBtn = container.querySelector("#entry-clear-inputs");
 
   let sleepMode = "time";
   let savedSnapshot = null;
@@ -413,6 +415,12 @@ export function initEntryView(container) {
 
   dateNextBtn.addEventListener("click", () => {
     tryNavigateToDate(addDaysToISODate(loadedDate, 1));
+  });
+
+  clearInputsBtn.addEventListener("click", () => {
+    applyEntryToForm(EMPTY_FORM);
+    updateFormValidity();
+    updateEditingState();
   });
 
   modeCancelBtn.addEventListener("click", () => {
