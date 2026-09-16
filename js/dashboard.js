@@ -19,6 +19,16 @@ const CHART_COLORS = {
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
+const TAG_CATEGORIES = ["", "Office", "WFH", "No alarm"];
+const TAG_CATEGORY_LABELS = {
+  "": "No particular reason",
+  Office: "Office",
+  WFH: "WFH",
+  "No alarm": "No alarm",
+};
+
+const LOCATION_CATEGORIES = ["In my bed, at home", "In a bed, elsewhere", "On the sofa", "Other"];
+
 function average(values) {
   const clean = values.filter((v) => v !== null && v !== undefined && !Number.isNaN(v));
   if (clean.length === 0) return null;
@@ -83,6 +93,31 @@ function groupBucketsByPeriod(rows, period, goalMinutes) {
   return [...groups.entries()]
     .sort(([a], [b]) => (a < b ? -1 : 1))
     .map(([key, counts]) => ({ key, ...counts }));
+}
+
+function groupByCategory(rows, categoryKey, categories, defaultValue, goalMinutes) {
+  const groups = new Map(categories.map((c) => [c, []]));
+  for (const row of rows) {
+    const key = row[categoryKey] || defaultValue;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(row);
+  }
+  return categories.map((key) => {
+    const entries = groups.get(key) ?? [];
+    const validDurations = entries
+      .map((e) => e.metrics.totalSleepTimeMinutes)
+      .filter((v) => v !== null && v !== undefined && !Number.isNaN(v));
+    const normalCount = validDurations.filter(
+      (d) => classifyDurationBucket(d, goalMinutes) === "normal",
+    ).length;
+    return {
+      key,
+      count: entries.length,
+      efficiency: average(entries.map((e) => e.metrics.sleepEfficiencyPct)),
+      duration: average(entries.map((e) => e.metrics.totalSleepTimeMinutes)),
+      consistency: validDurations.length === 0 ? null : (100 * normalCount) / validDurations.length,
+    };
+  });
 }
 
 function formatMinutes(mins) {
@@ -196,6 +231,16 @@ export function initDashboardView(container) {
         </div>
         <div class="chart-wrap"><canvas id="consistency-chart"></canvas></div>
       </div>
+
+      <div class="card">
+        <h2 class="chart-title">Wake reason breakdown</h2>
+        <div class="chart-wrap"><canvas id="tag-breakdown-chart"></canvas></div>
+      </div>
+
+      <div class="card">
+        <h2 class="chart-title">Sleep location breakdown</h2>
+        <div class="chart-wrap"><canvas id="location-breakdown-chart"></canvas></div>
+      </div>
     </div>
   `;
 
@@ -209,6 +254,8 @@ export function initDashboardView(container) {
   const timeToRiseCanvas = container.querySelector("#time-to-rise-chart");
   const consistencyToggle = container.querySelector("#consistency-period-toggle");
   const consistencyCanvas = container.querySelector("#consistency-chart");
+  const tagBreakdownCanvas = container.querySelector("#tag-breakdown-chart");
+  const locationBreakdownCanvas = container.querySelector("#location-breakdown-chart");
 
   let rows = [];
   let efficiencyPeriod = "day";
@@ -220,6 +267,8 @@ export function initDashboardView(container) {
   let timeToRiseChart = null;
   let consistencyPeriod = "week";
   let consistencyChart = null;
+  let tagBreakdownChart = null;
+  let locationBreakdownChart = null;
 
   function filteredRows() {
     if (!tagFilter.value) return rows;
@@ -528,6 +577,93 @@ export function initDashboardView(container) {
     });
   }
 
+  function renderBreakdownChart(chart, canvas, grouped, labels) {
+    if (chart) chart.destroy();
+    return new Chart(canvas, {
+      type: "bar",
+      data: {
+        labels,
+        datasets: [
+          {
+            label: "Sleep efficiency %",
+            data: grouped.map((g) => g.efficiency),
+            backgroundColor: CHART_COLORS.efficiency,
+            yAxisID: "y",
+          },
+          {
+            label: "Consistency %",
+            data: grouped.map((g) => g.consistency),
+            backgroundColor: CHART_COLORS.normalSleep,
+            yAxisID: "y",
+          },
+          {
+            label: "Sleep duration",
+            data: grouped.map((g) => g.duration),
+            backgroundColor: CHART_COLORS.duration,
+            yAxisID: "y1",
+          },
+        ],
+      },
+      options: {
+        maintainAspectRatio: false,
+        scales: {
+          x: { grid: { color: CHART_COLORS.grid }, ticks: { color: CHART_COLORS.text } },
+          y: {
+            min: 0,
+            max: 100,
+            position: "left",
+            grid: { color: CHART_COLORS.grid },
+            ticks: { color: CHART_COLORS.text, callback: (v) => `${v}%` },
+          },
+          y1: {
+            min: 0,
+            position: "right",
+            grid: { drawOnChartArea: false },
+            ticks: { color: CHART_COLORS.text, callback: (v) => formatMinutes(v) },
+          },
+        },
+        plugins: {
+          legend: { labels: { color: CHART_COLORS.text } },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => {
+                if (ctx.parsed.y === null || ctx.parsed.y === undefined) return `${ctx.dataset.label}: –`;
+                return ctx.dataset.yAxisID === "y1"
+                  ? `${ctx.dataset.label}: ${formatMinutes(ctx.parsed.y)}`
+                  : `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(1)}%`;
+              },
+            },
+          },
+        },
+      },
+    });
+  }
+
+  function renderTagBreakdownChart(rowsForChart) {
+    const { durationGoalMinutes } = getGoals();
+    const grouped = groupByCategory(rowsForChart, "tag", TAG_CATEGORIES, "", durationGoalMinutes);
+    const labels = grouped.map((g) => `${TAG_CATEGORY_LABELS[g.key]} (${g.count})`);
+    tagBreakdownChart = renderBreakdownChart(tagBreakdownChart, tagBreakdownCanvas, grouped, labels);
+  }
+
+  function renderLocationBreakdownChart(rowsForChart) {
+    const { durationGoalMinutes } = getGoals();
+    const grouped = groupByCategory(
+      rowsForChart,
+      "sleep_location",
+      LOCATION_CATEGORIES,
+      "In my bed, at home",
+      durationGoalMinutes,
+    );
+    const labels = grouped.map((g) => `${g.key} (${g.count})`);
+    locationBreakdownChart = renderBreakdownChart(
+      locationBreakdownChart,
+      locationBreakdownCanvas,
+      grouped,
+      labels,
+    );
+  }
+
   function renderAll() {
     const filtered = filteredRows();
     renderSummary(filtered);
@@ -535,6 +671,8 @@ export function initDashboardView(container) {
     renderDurationChart(filtered);
     renderTimesChart(filtered);
     renderConsistencyChart(filtered);
+    renderTagBreakdownChart(rows);
+    renderLocationBreakdownChart(rows);
     timeToSleepChart = renderMinutesDiffChart(
       timeToSleepChart,
       timeToSleepCanvas,
