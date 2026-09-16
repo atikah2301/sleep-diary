@@ -513,6 +513,39 @@ table.export-preview td {
   overflow-x: auto;
 }
 
+.table-scroll-top {
+  overflow-x: auto;
+  overflow-y: hidden;
+  height: 16px;
+  margin-bottom: 4px;
+}
+
+.table-scroll-top > div {
+  height: 1px;
+}
+
+.sticky-col {
+  position: sticky;
+  background: var(--surface);
+  z-index: 1;
+}
+
+.sticky-col-1 {
+  left: 0;
+  width: 110px;
+  min-width: 110px;
+}
+
+.sticky-col-2 {
+  left: 110px;
+  width: 60px;
+  min-width: 60px;
+}
+
+table.data-table tbody tr:hover .sticky-col {
+  background: var(--surface-raised);
+}
+
 table.data-table th[data-sort] {
   cursor: pointer;
   white-space: nowrap;
@@ -551,5 +584,13 @@ table.data-table tbody tr:hover {
 
   .table-scroll {
     overflow: visible;
+  }
+
+  .table-scroll-top {
+    display: none;
+  }
+
+  .sticky-col {
+    position: static;
   }
 }

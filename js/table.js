@@ -1,5 +1,6 @@
 import { supabase } from "./supabase-client.js";
 import { computeMetrics } from "./metrics.js";
+import { addTopScrollbar } from "./table-scroll-sync.js";
 
 const COLUMNS = [
   { key: "entry_date", label: "Date" },
@@ -126,6 +127,12 @@ function sortValue(row, key) {
   }
 }
 
+function stickyClass(key) {
+  if (key === "entry_date") return "sticky-col sticky-col-1";
+  if (key === "dayOfWeek") return "sticky-col sticky-col-2";
+  return "";
+}
+
 function editEntry(date) {
   const entryTabButton = document.querySelector('nav.tabs button[data-tab="entry"]');
   const dateInput = document.querySelector("#entry-date");
@@ -168,6 +175,8 @@ export function initTableView(container) {
   const conversionsToggle = container.querySelector("#table-toggle-conversions");
   const timeToSleepToggle = container.querySelector("#table-toggle-time-to-sleep");
   const timeToRiseToggle = container.querySelector("#table-toggle-time-to-rise");
+
+  addTopScrollbar(container.querySelector(".table-scroll"), tableEl);
 
   let rows = [];
   let sortKey = "entry_date";
@@ -214,14 +223,14 @@ export function initTableView(container) {
 
     const head = `<tr>${columns.map((c) => {
       const arrow = c.key === sortKey ? (sortDir === 1 ? " ▲" : " ▼") : "";
-      return `<th data-sort="${c.key}">${c.label}${arrow}</th>`;
+      return `<th data-sort="${c.key}" class="${stickyClass(c.key)}">${c.label}${arrow}</th>`;
     }).join("")}</tr>`;
 
     const body = sorted
       .map(
         (row) =>
           `<tr data-date="${row.entry_date}">${columns.map(
-            (c) => `<td>${formatValue(row, c.key)}</td>`,
+            (c) => `<td class="${stickyClass(c.key)}">${formatValue(row, c.key)}</td>`,
           ).join("")}</tr>`,
       )
       .join("");
