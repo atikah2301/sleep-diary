@@ -20,6 +20,15 @@ function formatDateLabel(dateStr) {
   return d.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
 }
 
+function addDaysToISODate(dateStr, n) {
+  const d = new Date(`${dateStr}T00:00:00`);
+  d.setDate(d.getDate() + n);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 // Plausibility ceilings for each leg of the bed->sleep->wake->rise sequence. unwrapSequence()
 // always resolves times forward by adding a day, so a genuine ordering mistake (e.g. sleep
 // time typed before bed time) doesn't show up as "negative" - it shows up as an implausibly
@@ -52,8 +61,8 @@ const DEFAULT_SLEEP_LOCATION = "In my bed, at home";
 const EMPTY_FORM = {
   bed_time: "",
   sleep_time: "",
-  awakenings_count: 0,
-  awake_minutes: 0,
+  awakenings_count: "0",
+  awake_minutes: "0",
   wake_time: "",
   rising_time: "",
   tag: "",
@@ -70,8 +79,17 @@ export function initEntryView(container) {
     </div>
 
     <form id="entry-form" class="card">
-      <label for="entry-date">For the night of...</label>
-      <input id="entry-date" type="date" required />
+      <div class="entry-date-nav">
+        <button type="button" id="entry-date-prev" aria-label="Previous day">◀</button>
+        <div>
+          <label for="entry-date">For the night of...</label>
+          <input id="entry-date" type="date" required />
+        </div>
+        <button type="button" id="entry-date-next" aria-label="Next day">▶</button>
+      </div>
+      <p id="entry-nav-blocked-msg" class="error-message" hidden>
+        You have unsaved changes for this entry. Save or complete it before navigating to another entry.
+      </p>
 
       <label for="bed-time">I got into bed at...</label>
       <input id="bed-time" type="time" required />
@@ -166,6 +184,9 @@ export function initEntryView(container) {
   const cancelFeedbackEl = container.querySelector("#entry-mode-cancel-feedback");
   const entryTabButton = document.querySelector('nav.tabs button[data-tab="entry"]');
   const noChangesMsgEl = container.querySelector("#entry-no-changes-msg");
+  const datePrevBtn = container.querySelector("#entry-date-prev");
+  const dateNextBtn = container.querySelector("#entry-date-next");
+  const navBlockedMsgEl = container.querySelector("#entry-nav-blocked-msg");
 
   let sleepMode = "time";
   let savedSnapshot = null;
@@ -173,6 +194,7 @@ export function initEntryView(container) {
   let showingCancelFeedback = false;
   let cancelFeedbackTimer = null;
   let noChangesTimer = null;
+  let loadedDate = null;
 
   function setSleepMode(mode) {
     sleepMode = mode;
@@ -219,6 +241,10 @@ export function initEntryView(container) {
     };
   }
 
+  function hasUnsavedNewEntryData() {
+    return savedSnapshot === null && JSON.stringify(snapshotFromForm()) !== JSON.stringify(EMPTY_FORM);
+  }
+
   function updateEditingState() {
     const hasExistingEntry = savedSnapshot !== null;
     isDirty = hasExistingEntry && JSON.stringify(snapshotFromForm()) !== JSON.stringify(savedSnapshot);
@@ -233,6 +259,11 @@ export function initEntryView(container) {
 
     if (hasExistingEntry) modeDateEl.textContent = formatDateLabel(dateInput.value);
     if (!showingCancelFeedback) modeBanner.hidden = !(hasExistingEntry && isDirty);
+
+    const showDateNav = !(hasExistingEntry && isDirty);
+    datePrevBtn.hidden = !showDateNav;
+    dateNextBtn.hidden = !showDateNav;
+    if (!hasUnsavedNewEntryData()) navBlockedMsgEl.hidden = true;
   }
 
   function updateSleepHint() {
@@ -356,12 +387,32 @@ export function initEntryView(container) {
     summaryEl.hidden = false;
   }
 
-  dateInput.addEventListener("change", () => {
+  function tryNavigateToDate(newDate) {
+    if (hasUnsavedNewEntryData()) {
+      dateInput.value = loadedDate;
+      navBlockedMsgEl.hidden = false;
+      return;
+    }
+    navBlockedMsgEl.hidden = true;
+    dateInput.value = newDate;
+    loadedDate = newDate;
     showingCancelFeedback = false;
     clearTimeout(cancelFeedbackTimer);
     cancelFeedbackEl.hidden = true;
     modeCancelBtn.hidden = false;
-    loadEntryForDate(dateInput.value);
+    loadEntryForDate(newDate);
+  }
+
+  dateInput.addEventListener("change", () => {
+    tryNavigateToDate(dateInput.value);
+  });
+
+  datePrevBtn.addEventListener("click", () => {
+    tryNavigateToDate(addDaysToISODate(loadedDate, -1));
+  });
+
+  dateNextBtn.addEventListener("click", () => {
+    tryNavigateToDate(addDaysToISODate(loadedDate, 1));
   });
 
   modeCancelBtn.addEventListener("click", () => {
@@ -426,5 +477,6 @@ export function initEntryView(container) {
   });
 
   dateInput.value = yesterdayISO();
+  loadedDate = dateInput.value;
   loadEntryForDate(dateInput.value);
 }

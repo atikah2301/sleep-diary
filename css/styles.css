@@ -260,6 +260,27 @@ textarea:focus {
   margin: -10px 0 16px;
 }
 
+.entry-date-nav {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.entry-date-nav > div {
+  flex: 1;
+}
+
+.entry-date-nav button {
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface-raised);
+  color: var(--text);
+  font-size: 1rem;
+  cursor: pointer;
+}
+
 .mode-banner {
   display: flex;
   flex-direction: column;
