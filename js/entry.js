@@ -8,6 +8,10 @@ function yesterdayISO() {
   return d.toISOString().slice(0, 10);
 }
 
+function todayISO() {
+  return new Date().toISOString().slice(0, 10);
+}
+
 function formatMinutes(mins) {
   if (mins === null || Number.isNaN(mins)) return "–";
   const h = Math.floor(Math.abs(mins) / 60);
@@ -87,6 +91,7 @@ export function initEntryView(container) {
         </div>
         <button type="button" id="entry-date-next" aria-label="Next day">▶</button>
       </div>
+      <button type="button" id="entry-date-today" class="secondary">Jump to today</button>
       <p id="entry-nav-blocked-msg" class="error-message" hidden>
         You have unsaved changes for this entry. Save or complete it before navigating to another entry.
       </p>
@@ -187,6 +192,7 @@ export function initEntryView(container) {
   const noChangesMsgEl = container.querySelector("#entry-no-changes-msg");
   const datePrevBtn = container.querySelector("#entry-date-prev");
   const dateNextBtn = container.querySelector("#entry-date-next");
+  const dateTodayBtn = container.querySelector("#entry-date-today");
   const navBlockedMsgEl = container.querySelector("#entry-nav-blocked-msg");
   const clearInputsBtn = container.querySelector("#entry-clear-inputs");
 
@@ -265,6 +271,7 @@ export function initEntryView(container) {
     const showDateNav = !(hasExistingEntry && isDirty);
     datePrevBtn.hidden = !showDateNav;
     dateNextBtn.hidden = !showDateNav;
+    dateTodayBtn.hidden = !showDateNav;
     if (!hasUnsavedNewEntryData()) navBlockedMsgEl.hidden = true;
   }
 
@@ -415,6 +422,10 @@ export function initEntryView(container) {
 
   dateNextBtn.addEventListener("click", () => {
     tryNavigateToDate(addDaysToISODate(loadedDate, 1));
+  });
+
+  dateTodayBtn.addEventListener("click", () => {
+    tryNavigateToDate(todayISO());
   });
 
   clearInputsBtn.addEventListener("click", () => {
