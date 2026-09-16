@@ -479,7 +479,8 @@ button.secondary {
 
 table.export-preview {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   font-size: 0.8rem;
   margin-top: 16px;
 }
