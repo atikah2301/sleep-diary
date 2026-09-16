@@ -154,6 +154,7 @@ export function initDashboardView(container) {
 
     <div class="charts-grid">
       <div class="card">
+        <h2 class="chart-title">Sleep efficiency</h2>
         <div class="period-toggle" id="efficiency-period-toggle">
           <button type="button" data-period="day" class="active">Day</button>
           <button type="button" data-period="week">Week</button>
@@ -163,6 +164,7 @@ export function initDashboardView(container) {
       </div>
 
       <div class="card">
+        <h2 class="chart-title">Sleep duration</h2>
         <div class="period-toggle" id="duration-period-toggle">
           <button type="button" data-period="day" class="active">Day</button>
           <button type="button" data-period="week">Week</button>
@@ -172,18 +174,22 @@ export function initDashboardView(container) {
       </div>
 
       <div class="card">
+        <h2 class="chart-title">Sleep timeline</h2>
         <div class="chart-wrap"><canvas id="times-chart"></canvas></div>
       </div>
 
       <div class="card">
+        <h2 class="chart-title">Time to fall asleep (mins)</h2>
         <div class="chart-wrap"><canvas id="time-to-sleep-chart"></canvas></div>
       </div>
 
       <div class="card">
+        <h2 class="chart-title">Time to rise (mins)</h2>
         <div class="chart-wrap"><canvas id="time-to-rise-chart"></canvas></div>
       </div>
 
       <div class="card">
+        <h2 class="chart-title">Sleep consistency</h2>
         <div class="period-toggle" id="consistency-period-toggle">
           <button type="button" data-period="week" class="active">Week</button>
           <button type="button" data-period="month">Month</button>
@@ -375,7 +381,7 @@ export function initDashboardView(container) {
         labels,
         datasets: [
           {
-            label: "Time to fall asleep",
+            label: "Time to fall asleep (mins)",
             data: bedMins.map((b, i) => [b, sleepMins[i]]),
             backgroundColor: CHART_COLORS.sleep,
             stack: "night",
@@ -387,7 +393,7 @@ export function initDashboardView(container) {
             stack: "night",
           },
           {
-            label: "Time to get out of bed",
+            label: "Time to rise (mins)",
             data: wakeMins.map((w, i) => [w, riseMins[i]]),
             backgroundColor: CHART_COLORS.rise,
             stack: "night",
@@ -533,7 +539,7 @@ export function initDashboardView(container) {
       timeToSleepChart,
       timeToSleepCanvas,
       filtered,
-      "Time to fall asleep",
+      "Time to fall asleep (mins)",
       CHART_COLORS.sleep,
       "sleepOnsetLatencyMinutes",
     );
@@ -541,7 +547,7 @@ export function initDashboardView(container) {
       timeToRiseChart,
       timeToRiseCanvas,
       filtered,
-      "Time to get out of bed",
+      "Time to rise (mins)",
       CHART_COLORS.rise,
       "awakeAfterWakingMinutes",
     );
