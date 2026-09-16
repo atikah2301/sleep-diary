@@ -143,6 +143,7 @@ export function initTableView(container) {
         <div class="week-nav-label" id="week-label">w/c –</div>
         <button type="button" id="week-next" aria-label="Next week">▶</button>
       </div>
+      <button type="button" id="week-today" class="secondary">Jump to this week</button>
       <p class="hint" style="margin: 0 0 12px">Select a row to open it for editing. Select a column header to sort.</p>
       <div class="checkbox-group">
         <label class="checkbox-label"><input type="checkbox" id="table-toggle-day" /> Show day</label>
@@ -162,6 +163,7 @@ export function initTableView(container) {
   const weekLabel = container.querySelector("#week-label");
   const prevBtn = container.querySelector("#week-prev");
   const nextBtn = container.querySelector("#week-next");
+  const todayBtn = container.querySelector("#week-today");
   const dayToggle = container.querySelector("#table-toggle-day");
   const conversionsToggle = container.querySelector("#table-toggle-conversions");
   const timeToSleepToggle = container.querySelector("#table-toggle-time-to-sleep");
@@ -227,6 +229,11 @@ export function initTableView(container) {
 
   nextBtn.addEventListener("click", () => {
     weekStart = addDays(weekStart, 7);
+    render();
+  });
+
+  todayBtn.addEventListener("click", () => {
+    weekStart = mondayOf(toDateStr(new Date()));
     render();
   });
 
