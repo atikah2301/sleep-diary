@@ -300,6 +300,18 @@ textarea:focus {
   cursor: pointer;
 }
 
+.entry-button-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.entry-button-row button.secondary {
+  width: auto;
+  flex: 1;
+  margin-top: 0;
+}
+
 .mode-banner {
   display: flex;
   flex-direction: column;

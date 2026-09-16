@@ -91,12 +91,14 @@ export function initEntryView(container) {
         </div>
         <button type="button" id="entry-date-next" aria-label="Next day">▶</button>
       </div>
-      <button type="button" id="entry-date-today" class="secondary">Jump to today</button>
+      <div class="entry-button-row">
+        <button type="button" id="entry-date-today" class="secondary">Jump to today</button>
+        <button type="button" id="entry-clear-inputs" class="secondary">Clear inputs</button>
+        <button type="button" id="entry-show-in-table" class="secondary" hidden>Show in Table</button>
+      </div>
       <p id="entry-nav-blocked-msg" class="error-message" hidden>
         You have unsaved changes for this entry. Save or complete it before navigating to another entry.
       </p>
-      <button type="button" id="entry-clear-inputs" class="secondary">Clear inputs</button>
-      <button type="button" id="entry-show-in-table" class="secondary" hidden>Show in Table</button>
 
       <label for="bed-time">I got into bed at...</label>
       <input id="bed-time" type="time" required />
