@@ -398,6 +398,7 @@ export function initDashboardView(container) {
         maintainAspectRatio: false,
         scales: {
           y: {
+            stacked: false,
             grid: { color: CHART_COLORS.grid },
             ticks: {
               color: CHART_COLORS.text,
