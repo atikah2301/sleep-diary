@@ -109,6 +109,7 @@ export function initEntryView(container) {
 
       <p id="entry-error" class="error-message" hidden></p>
       <button type="submit" class="primary" id="entry-submit">Save entry</button>
+      <p id="entry-no-changes-msg" class="form-feedback" hidden>No changes to save.</p>
     </form>
 
     <div id="entry-summary" class="card" hidden>
@@ -152,11 +153,14 @@ export function initEntryView(container) {
   const modeCancelBtn = container.querySelector("#entry-mode-cancel");
   const cancelFeedbackEl = container.querySelector("#entry-mode-cancel-feedback");
   const entryTabButton = document.querySelector('nav.tabs button[data-tab="entry"]');
+  const noChangesMsgEl = container.querySelector("#entry-no-changes-msg");
 
   let sleepMode = "time";
-  let isEditingMode = false;
+  let savedSnapshot = null;
+  let isDirty = false;
   let showingCancelFeedback = false;
   let cancelFeedbackTimer = null;
+  let noChangesTimer = null;
 
   function setSleepMode(mode) {
     sleepMode = mode;
@@ -167,6 +171,7 @@ export function initEntryView(container) {
     sleepDurationInput.hidden = mode !== "duration";
     updateSleepHint();
     updateFormValidity();
+    updateEditingState();
   }
 
   function updateFormValidity() {
@@ -186,6 +191,35 @@ export function initEntryView(container) {
     if (orderIssues.length > 0) errorEl.textContent = orderIssues.join(" ");
 
     submitBtn.disabled = !awakeningsOk || !awakeMinutesOk || orderIssues.length > 0;
+  }
+
+  function snapshotFromForm() {
+    return {
+      bed_time: bedTimeInput.value,
+      sleep_time: resolveSleepTime(),
+      awakenings_count: awakeningsInput.value,
+      awake_minutes: awakeMinutesInput.value,
+      wake_time: wakeTimeInput.value,
+      rising_time: risingTimeInput.value,
+      tag: tagSelect.value,
+      notes: notesInput.value,
+    };
+  }
+
+  function updateEditingState() {
+    const hasExistingEntry = savedSnapshot !== null;
+    isDirty = hasExistingEntry && JSON.stringify(snapshotFromForm()) !== JSON.stringify(savedSnapshot);
+
+    let tabLabel = "New entry";
+    if (hasExistingEntry) tabLabel = isDirty ? "Edit entry" : "View entry";
+    if (entryTabButton) {
+      entryTabButton.textContent = tabLabel;
+      entryTabButton.classList.toggle("editing", hasExistingEntry && isDirty);
+    }
+    submitBtn.textContent = hasExistingEntry ? "Update entry" : "Save entry";
+
+    if (hasExistingEntry) modeDateEl.textContent = formatDateLabel(dateInput.value);
+    if (!showingCancelFeedback) modeBanner.hidden = !(hasExistingEntry && isDirty);
   }
 
   function updateSleepHint() {
@@ -237,12 +271,19 @@ export function initEntryView(container) {
     el.addEventListener("input", () => {
       updateSleepHint();
       updateFormValidity();
+      updateEditingState();
     }),
   );
 
   [awakeningsInput, awakeMinutesInput].forEach((el) =>
-    el.addEventListener("input", updateFormValidity),
+    el.addEventListener("input", () => {
+      updateFormValidity();
+      updateEditingState();
+    }),
   );
+
+  tagSelect.addEventListener("change", updateEditingState);
+  notesInput.addEventListener("input", updateEditingState);
 
   function applyEntryToForm(entry) {
     bedTimeInput.value = entry.bed_time?.slice(0, 5) ?? "";
@@ -258,17 +299,6 @@ export function initEntryView(container) {
     showSummaryIfComplete();
   }
 
-  function setEditMode(existing, date) {
-    isEditingMode = Boolean(existing);
-    if (entryTabButton) {
-      entryTabButton.textContent = isEditingMode ? "Edit entry" : "New entry";
-      entryTabButton.classList.toggle("editing", isEditingMode);
-    }
-    submitBtn.textContent = isEditingMode ? "Update entry" : "Save entry";
-    if (isEditingMode) modeDateEl.textContent = formatDateLabel(date);
-    if (!showingCancelFeedback) modeBanner.hidden = !isEditingMode;
-  }
-
   async function loadEntryForDate(date) {
     errorEl.hidden = true;
     const { data, error } = await supabase
@@ -282,8 +312,9 @@ export function initEntryView(container) {
       errorEl.hidden = false;
       return;
     }
-    setEditMode(Boolean(data), date);
     applyEntryToForm(data ?? EMPTY_FORM);
+    savedSnapshot = data ? snapshotFromForm() : null;
+    updateEditingState();
   }
 
   function currentFormEntry() {
@@ -318,27 +349,38 @@ export function initEntryView(container) {
     loadEntryForDate(dateInput.value);
   });
 
-  modeCancelBtn.addEventListener("click", async () => {
+  modeCancelBtn.addEventListener("click", () => {
+    if (!savedSnapshot) return;
+    applyEntryToForm(savedSnapshot);
+    updateFormValidity();
+
     showingCancelFeedback = true;
     clearTimeout(cancelFeedbackTimer);
+    updateEditingState();
     modeCancelBtn.hidden = true;
     cancelFeedbackEl.hidden = false;
     modeBanner.hidden = false;
-
-    dateInput.value = yesterdayISO();
-    await loadEntryForDate(dateInput.value);
 
     cancelFeedbackTimer = setTimeout(() => {
       showingCancelFeedback = false;
       cancelFeedbackEl.hidden = true;
       modeCancelBtn.hidden = false;
-      modeBanner.hidden = !isEditingMode;
+      updateEditingState();
     }, 2000);
   });
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     errorEl.hidden = true;
+
+    if (savedSnapshot && !isDirty) {
+      clearTimeout(noChangesTimer);
+      noChangesMsgEl.hidden = false;
+      noChangesTimer = setTimeout(() => {
+        noChangesMsgEl.hidden = true;
+      }, 2000);
+      return;
+    }
 
     const payload = {
       entry_date: dateInput.value,
@@ -362,7 +404,8 @@ export function initEntryView(container) {
       return;
     }
 
-    setEditMode(true, dateInput.value);
+    savedSnapshot = snapshotFromForm();
+    updateEditingState();
     showSummaryIfComplete();
   });
 

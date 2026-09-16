@@ -335,13 +335,38 @@ export function initDashboardView(container) {
     });
   }
 
+  /** minutesSinceNoon() alone can go backwards partway through a night: it categorizes
+   * any AM-looking clock value as "the far side of midnight" and any PM-looking value as
+   * "the near side", which breaks as soon as wake/rising falls after noon (a lie-in) -
+   * that point wraps back to a low value instead of continuing to climb, producing a
+   * reversed/zero-length bar segment. Unwrapping the already-shifted sequence forces it
+   * to keep climbing, the same way unwrapSequence() does for raw clock times elsewhere. */
+  function unwrapNightMinutes(bedClock, sleepClock, wakeClock, riseClock) {
+    const shifted = [bedClock, sleepClock, wakeClock, riseClock].map(minutesSinceNoon);
+    const unwrapped = [shifted[0]];
+    for (let i = 1; i < shifted.length; i++) {
+      let cur = shifted[i];
+      while (cur < unwrapped[i - 1]) cur += 1440;
+      unwrapped.push(cur);
+    }
+    return unwrapped;
+  }
+
   function renderTimesChart(rowsForChart) {
     const sorted = [...rowsForChart].sort((a, b) => (a.entry_date < b.entry_date ? -1 : 1));
     const labels = sorted.map((r) => r.entry_date);
-    const bedMins = sorted.map((r) => minutesSinceNoon(r.bed_time.slice(0, 5)));
-    const sleepMins = sorted.map((r) => minutesSinceNoon(r.sleep_time.slice(0, 5)));
-    const wakeMins = sorted.map((r) => minutesSinceNoon(r.wake_time.slice(0, 5)));
-    const riseMins = sorted.map((r) => minutesSinceNoon(r.rising_time.slice(0, 5)));
+    const unwrapped = sorted.map((r) =>
+      unwrapNightMinutes(
+        r.bed_time.slice(0, 5),
+        r.sleep_time.slice(0, 5),
+        r.wake_time.slice(0, 5),
+        r.rising_time.slice(0, 5),
+      ),
+    );
+    const bedMins = unwrapped.map((u) => u[0]);
+    const sleepMins = unwrapped.map((u) => u[1]);
+    const wakeMins = unwrapped.map((u) => u[2]);
+    const riseMins = unwrapped.map((u) => u[3]);
 
     if (timesChart) timesChart.destroy();
     timesChart = new Chart(timesCanvas, {
@@ -376,6 +401,7 @@ export function initDashboardView(container) {
             grid: { color: CHART_COLORS.grid },
             ticks: {
               color: CHART_COLORS.text,
+              stepSize: 60,
               callback: (v) => clockFromMinutesSinceNoon(v),
             },
           },
