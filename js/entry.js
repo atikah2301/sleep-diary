@@ -47,6 +47,8 @@ function validateNonNegativeInteger(inputEl, errorEl) {
   return isValid;
 }
 
+const DEFAULT_SLEEP_LOCATION = "In my bed, at home";
+
 const EMPTY_FORM = {
   bed_time: "",
   sleep_time: "",
@@ -55,6 +57,7 @@ const EMPTY_FORM = {
   wake_time: "",
   rising_time: "",
   tag: "",
+  sleep_location: DEFAULT_SLEEP_LOCATION,
   notes: "",
 };
 
@@ -104,6 +107,14 @@ export function initEntryView(container) {
         <option value="No alarm">No alarm — no plan the next day</option>
       </select>
 
+      <label for="sleep-location-select">The place I fell asleep was...</label>
+      <select id="sleep-location-select">
+        <option value="In my bed, at home">In my bed, at home</option>
+        <option value="In a bed, elsewhere">In a bed, elsewhere</option>
+        <option value="On the sofa">On the sofa</option>
+        <option value="Other">Other</option>
+      </select>
+
       <label for="notes">Notes (optional)</label>
       <textarea id="notes" rows="2"></textarea>
 
@@ -143,6 +154,7 @@ export function initEntryView(container) {
   const wakeTimeInput = container.querySelector("#wake-time");
   const risingTimeInput = container.querySelector("#rising-time");
   const tagSelect = container.querySelector("#tag-select");
+  const sleepLocationSelect = container.querySelector("#sleep-location-select");
   const notesInput = container.querySelector("#notes");
   const form = container.querySelector("#entry-form");
   const submitBtn = container.querySelector("#entry-submit");
@@ -202,6 +214,7 @@ export function initEntryView(container) {
       wake_time: wakeTimeInput.value,
       rising_time: risingTimeInput.value,
       tag: tagSelect.value,
+      sleep_location: sleepLocationSelect.value,
       notes: notesInput.value,
     };
   }
@@ -283,6 +296,7 @@ export function initEntryView(container) {
   );
 
   tagSelect.addEventListener("change", updateEditingState);
+  sleepLocationSelect.addEventListener("change", updateEditingState);
   notesInput.addEventListener("input", updateEditingState);
 
   function applyEntryToForm(entry) {
@@ -293,6 +307,7 @@ export function initEntryView(container) {
     wakeTimeInput.value = entry.wake_time?.slice(0, 5) ?? "";
     risingTimeInput.value = entry.rising_time?.slice(0, 5) ?? "";
     tagSelect.value = entry.tag ?? "";
+    sleepLocationSelect.value = entry.sleep_location ?? DEFAULT_SLEEP_LOCATION;
     notesInput.value = entry.notes ?? "";
     setSleepMode("time");
     updateSleepHint();
@@ -391,6 +406,7 @@ export function initEntryView(container) {
       wake_time: wakeTimeInput.value,
       rising_time: risingTimeInput.value,
       tag: tagSelect.value || null,
+      sleep_location: sleepLocationSelect.value,
       notes: notesInput.value || null,
     };
 
