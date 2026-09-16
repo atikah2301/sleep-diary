@@ -31,12 +31,18 @@ const initializers = {
 
 const initialized = { entry: false, trends: false, table: false, export: false, goals: false };
 
+// These three tabs fetch diary_entries from Supabase once, at init, and cache it locally - so
+// they need to be re-initialized (re-fetching fresh data) on every visit, not just the first.
+// Entry manages its own live reload on date change, and Goals is local-storage-only, so neither
+// needs this.
+const REFRESH_ON_SHOW = new Set(["trends", "table", "export"]);
+
 function showTab(tabName) {
   for (const [name, panel] of Object.entries(panels)) {
     panel.hidden = name !== tabName;
   }
   tabButtons.forEach((btn) => btn.classList.toggle("active", btn.dataset.tab === tabName));
-  if (!initialized[tabName]) {
+  if (!initialized[tabName] || REFRESH_ON_SHOW.has(tabName)) {
     initialized[tabName] = true;
     initializers[tabName](panels[tabName]);
   }
