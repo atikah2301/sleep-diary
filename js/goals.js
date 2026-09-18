@@ -1,4 +1,4 @@
-import { addMinutesToClock } from "./time.js";
+import { addMinutesToClock, parseClockTime } from "./time.js";
 
 const STORAGE_KEY = "sleep-diary-goals";
 const DEFAULT_GOALS = {
@@ -68,6 +68,7 @@ export function initGoalsView(container) {
       <input id="goal-min-wake-time" type="time" />
       <label for="goal-max-wake-time">Latest wake time goal</label>
       <input id="goal-max-wake-time" type="time" />
+      <p id="goal-wake-time-error" class="error-message" hidden></p>
       <p class="hint" id="goal-bed-time-derived"></p>
 
       <button type="button" class="primary" id="goals-save">Save goals</button>
@@ -79,6 +80,7 @@ export function initGoalsView(container) {
   const efficiencyInput = container.querySelector("#goal-efficiency");
   const minWakeInput = container.querySelector("#goal-min-wake-time");
   const maxWakeInput = container.querySelector("#goal-max-wake-time");
+  const wakeTimeErrorEl = container.querySelector("#goal-wake-time-error");
   const bedTimeDerivedEl = container.querySelector("#goal-bed-time-derived");
   const saveBtn = container.querySelector("#goals-save");
   const savedMsg = container.querySelector("#goals-saved-msg");
@@ -87,6 +89,19 @@ export function initGoalsView(container) {
   efficiencyInput.value = goals.efficiencyGoalPct;
   minWakeInput.value = goals.minWakeTime;
   maxWakeInput.value = goals.maxWakeTime;
+
+  function wakeTimeOrderValid() {
+    if (!CLOCK_RE.test(minWakeInput.value) || !CLOCK_RE.test(maxWakeInput.value)) return true;
+    return parseClockTime(minWakeInput.value) < parseClockTime(maxWakeInput.value);
+  }
+
+  function updateWakeTimeValidation() {
+    const valid = wakeTimeOrderValid();
+    wakeTimeErrorEl.hidden = valid;
+    if (!valid) wakeTimeErrorEl.textContent = "Earliest wake time goal must be before the latest wake time goal.";
+    saveBtn.disabled = !valid;
+    return valid;
+  }
 
   function updateBedTimeDerived() {
     const hours = parseFloat(durationInput.value);
@@ -99,11 +114,16 @@ export function initGoalsView(container) {
   }
 
   [durationInput, minWakeInput, maxWakeInput].forEach((el) =>
-    el.addEventListener("input", updateBedTimeDerived),
+    el.addEventListener("input", () => {
+      updateWakeTimeValidation();
+      updateBedTimeDerived();
+    }),
   );
+  updateWakeTimeValidation();
   updateBedTimeDerived();
 
   saveBtn.addEventListener("click", () => {
+    if (!updateWakeTimeValidation()) return;
     const hours = parseFloat(durationInput.value);
     const pct = parseFloat(efficiencyInput.value);
     setGoals({
