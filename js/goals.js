@@ -71,7 +71,7 @@ export function initGoalsView(container) {
       <p class="hint" id="goal-bed-time-derived"></p>
 
       <button type="button" class="primary" id="goals-save">Save goals</button>
-      <p id="goals-saved-msg" class="hint" hidden>Saved.</p>
+      <p id="goals-saved-msg" class="form-feedback" hidden>Saved.</p>
     </div>
   `;
 
