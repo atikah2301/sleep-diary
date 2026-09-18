@@ -1,5 +1,18 @@
+import { addMinutesToClock } from "./time.js";
+
 const STORAGE_KEY = "sleep-diary-goals";
-const DEFAULT_GOALS = { durationGoalMinutes: 480, efficiencyGoalPct: 95 };
+const DEFAULT_GOALS = {
+  durationGoalMinutes: 480,
+  efficiencyGoalPct: 95,
+  minWakeTime: "07:00",
+  maxWakeTime: "08:00",
+};
+
+const CLOCK_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+function validClock(value, fallback) {
+  return typeof value === "string" && CLOCK_RE.test(value) ? value : fallback;
+}
 
 export function getGoals() {
   try {
@@ -13,10 +26,22 @@ export function getGoals() {
       efficiencyGoalPct: Number.isFinite(parsed.efficiencyGoalPct)
         ? parsed.efficiencyGoalPct
         : DEFAULT_GOALS.efficiencyGoalPct,
+      minWakeTime: validClock(parsed.minWakeTime, DEFAULT_GOALS.minWakeTime),
+      maxWakeTime: validClock(parsed.maxWakeTime, DEFAULT_GOALS.maxWakeTime),
     };
   } catch {
     return { ...DEFAULT_GOALS };
   }
+}
+
+/** Derives the bed-time goal range from the wake-time goal range and the duration goal:
+ * to hit a given wake time after sleeping for the duration goal, bed time must be that many
+ * minutes earlier (wrapping to the previous day, which addMinutesToClock already handles). */
+export function getBedTimeGoals(goals) {
+  return {
+    minBedTime: addMinutesToClock(goals.minWakeTime, -goals.durationGoalMinutes),
+    maxBedTime: addMinutesToClock(goals.maxWakeTime, -goals.durationGoalMinutes),
+  };
 }
 
 function setGoals(goals) {
@@ -38,6 +63,13 @@ export function initGoalsView(container) {
       <input id="goal-duration-hours" type="number" step="0.1" min="0" max="24" />
       <label for="goal-efficiency">Average sleep efficiency goal (%)</label>
       <input id="goal-efficiency" type="number" step="0.1" min="0" max="100" />
+
+      <label for="goal-min-wake-time">Earliest wake time goal</label>
+      <input id="goal-min-wake-time" type="time" />
+      <label for="goal-max-wake-time">Latest wake time goal</label>
+      <input id="goal-max-wake-time" type="time" />
+      <p class="hint" id="goal-bed-time-derived"></p>
+
       <button type="button" class="primary" id="goals-save">Save goals</button>
       <p id="goals-saved-msg" class="hint" hidden>Saved.</p>
     </div>
@@ -45,11 +77,31 @@ export function initGoalsView(container) {
 
   const durationInput = container.querySelector("#goal-duration-hours");
   const efficiencyInput = container.querySelector("#goal-efficiency");
+  const minWakeInput = container.querySelector("#goal-min-wake-time");
+  const maxWakeInput = container.querySelector("#goal-max-wake-time");
+  const bedTimeDerivedEl = container.querySelector("#goal-bed-time-derived");
   const saveBtn = container.querySelector("#goals-save");
   const savedMsg = container.querySelector("#goals-saved-msg");
 
   durationInput.value = goals.durationGoalMinutes / 60;
   efficiencyInput.value = goals.efficiencyGoalPct;
+  minWakeInput.value = goals.minWakeTime;
+  maxWakeInput.value = goals.maxWakeTime;
+
+  function updateBedTimeDerived() {
+    const hours = parseFloat(durationInput.value);
+    const { minBedTime, maxBedTime } = getBedTimeGoals({
+      durationGoalMinutes: Number.isFinite(hours) ? Math.round(hours * 60) : DEFAULT_GOALS.durationGoalMinutes,
+      minWakeTime: validClock(minWakeInput.value, DEFAULT_GOALS.minWakeTime),
+      maxWakeTime: validClock(maxWakeInput.value, DEFAULT_GOALS.maxWakeTime),
+    });
+    bedTimeDerivedEl.textContent = `Bed time goal (derived): ${minBedTime}–${maxBedTime}`;
+  }
+
+  [durationInput, minWakeInput, maxWakeInput].forEach((el) =>
+    el.addEventListener("input", updateBedTimeDerived),
+  );
+  updateBedTimeDerived();
 
   saveBtn.addEventListener("click", () => {
     const hours = parseFloat(durationInput.value);
@@ -59,7 +111,10 @@ export function initGoalsView(container) {
         ? Math.round(hours * 60)
         : DEFAULT_GOALS.durationGoalMinutes,
       efficiencyGoalPct: Number.isFinite(pct) ? pct : DEFAULT_GOALS.efficiencyGoalPct,
+      minWakeTime: validClock(minWakeInput.value, DEFAULT_GOALS.minWakeTime),
+      maxWakeTime: validClock(maxWakeInput.value, DEFAULT_GOALS.maxWakeTime),
     });
+    updateBedTimeDerived();
     savedMsg.hidden = false;
     setTimeout(() => {
       savedMsg.hidden = true;

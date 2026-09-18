@@ -244,6 +244,16 @@ textarea:focus {
   outline: 2px solid var(--accent);
 }
 
+/* iOS Safari renders type="date"/type="time" with a native minimum content width that
+   ignores our width:100%, so it can overflow its container on narrow phone screens.
+   Turning off the native appearance lets our own box sizing control it instead. */
+input[type="date"],
+input[type="time"] {
+  -webkit-appearance: none;
+  appearance: none;
+  min-width: 0;
+}
+
 .field-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
