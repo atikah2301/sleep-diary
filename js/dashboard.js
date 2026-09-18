@@ -1,7 +1,7 @@
 import { supabase } from "./supabase-client.js";
 import { computeMetrics } from "./metrics.js";
 import { minutesSinceNoon, clockFromMinutesSinceNoon } from "./time.js";
-import { getGoals } from "./goals.js";
+import { getGoals, getBedTimeGoals } from "./goals.js";
 
 const CHART_COLORS = {
   efficiency: "#fb923c",
@@ -16,6 +16,8 @@ const CHART_COLORS = {
   normalSleep: "#34d399",
   overslept: "#fbbf24",
   nap: "#c084fc",
+  wake: "#22d3ee",
+  bedtime: "#f472b6",
 };
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -105,6 +107,40 @@ function groupNapCountByPeriod(rows, period) {
   return [...groups.entries()]
     .sort(([a], [b]) => (a < b ? -1 : 1))
     .map(([key, count]) => ({ key, count }));
+}
+
+/** Whether a clock time falls within [minClock, maxClock], on the minutesSinceNoon scale
+ * so a range spanning midnight (e.g. a bed-time goal of 23:00-00:30) still works. */
+function isTimeInRange(clock, minClock, maxClock) {
+  let value = minutesSinceNoon(clock);
+  let min = minutesSinceNoon(minClock);
+  let max = minutesSinceNoon(maxClock);
+  if (max < min) max += 1440;
+  if (value < min) value += 1440;
+  return value >= min && value <= max;
+}
+
+function groupTimingConsistencyByPeriod(rows, period, wakeGoals, bedGoals) {
+  const groups = new Map();
+  for (const row of rows) {
+    const key = periodKey(row.entry_date, period);
+    if (!groups.has(key)) groups.set(key, { wakeInRange: 0, bedInRange: 0, total: 0 });
+    const bucket = groups.get(key);
+    bucket.total++;
+    if (isTimeInRange(row.wake_time.slice(0, 5), wakeGoals.minWakeTime, wakeGoals.maxWakeTime)) {
+      bucket.wakeInRange++;
+    }
+    if (isTimeInRange(row.bed_time.slice(0, 5), bedGoals.minBedTime, bedGoals.maxBedTime)) {
+      bucket.bedInRange++;
+    }
+  }
+  return [...groups.entries()]
+    .sort(([a], [b]) => (a < b ? -1 : 1))
+    .map(([key, b]) => ({
+      key,
+      wakeInRangePct: b.total === 0 ? null : (100 * b.wakeInRange) / b.total,
+      bedInRangePct: b.total === 0 ? null : (100 * b.bedInRange) / b.total,
+    }));
 }
 
 function groupByCategory(rows, categoryKey, categories, defaultValue, goalMinutes) {
@@ -245,6 +281,21 @@ export function initDashboardView(container) {
       </div>
 
       <div class="card">
+        <h2 class="chart-title">Wake time</h2>
+        <div class="chart-wrap"><canvas id="wake-time-chart"></canvas></div>
+      </div>
+
+      <div class="card">
+        <h2 class="chart-title">Bed time</h2>
+        <div class="chart-wrap"><canvas id="bed-time-chart"></canvas></div>
+      </div>
+
+      <div class="card">
+        <h2 class="chart-title">Wake &amp; bed time consistency</h2>
+        <div class="chart-wrap"><canvas id="timing-consistency-chart"></canvas></div>
+      </div>
+
+      <div class="card">
         <h2 class="chart-title">Naps per week</h2>
         <div class="chart-wrap"><canvas id="naps-chart"></canvas></div>
       </div>
@@ -271,6 +322,9 @@ export function initDashboardView(container) {
   const timeToRiseCanvas = container.querySelector("#time-to-rise-chart");
   const consistencyToggle = container.querySelector("#consistency-period-toggle");
   const consistencyCanvas = container.querySelector("#consistency-chart");
+  const wakeTimeCanvas = container.querySelector("#wake-time-chart");
+  const bedTimeCanvas = container.querySelector("#bed-time-chart");
+  const timingConsistencyCanvas = container.querySelector("#timing-consistency-chart");
   const napsCanvas = container.querySelector("#naps-chart");
   const tagBreakdownCanvas = container.querySelector("#tag-breakdown-chart");
   const locationBreakdownCanvas = container.querySelector("#location-breakdown-chart");
@@ -285,6 +339,9 @@ export function initDashboardView(container) {
   let timeToRiseChart = null;
   let consistencyPeriod = "week";
   let consistencyChart = null;
+  let wakeTimeChart = null;
+  let bedTimeChart = null;
+  let timingConsistencyChart = null;
   let napsChart = null;
   let tagBreakdownChart = null;
   let locationBreakdownChart = null;
@@ -596,6 +653,148 @@ export function initDashboardView(container) {
     });
   }
 
+  /** A flat dashed reference-line dataset, matching the existing "Goal" line style used by
+   * renderEfficiencyChart/renderDurationChart. */
+  function goalLineDataset(label, minutesSinceNoonValue, labels) {
+    return {
+      label,
+      data: labels.map(() => minutesSinceNoonValue),
+      borderColor: CHART_COLORS.goal,
+      borderDash: [6, 4],
+      borderWidth: 1.5,
+      pointRadius: 0,
+      tension: 0,
+      fill: false,
+    };
+  }
+
+  function clockChartOptions(labels) {
+    return {
+      maintainAspectRatio: false,
+      scales: {
+        y: {
+          grid: { color: CHART_COLORS.grid },
+          ticks: { color: CHART_COLORS.text, stepSize: 60, callback: (v) => clockFromMinutesSinceNoon(v) },
+        },
+        x: { grid: { color: CHART_COLORS.grid }, ticks: xAxisTicksOptions(labels, "day") },
+      },
+      plugins: {
+        legend: { labels: { color: CHART_COLORS.text } },
+        tooltip: {
+          callbacks: {
+            label: (ctx) =>
+              `${ctx.dataset.label}: ${ctx.parsed.y === null ? "–" : clockFromMinutesSinceNoon(ctx.parsed.y)}`,
+          },
+        },
+      },
+    };
+  }
+
+  function renderWakeTimeChart(rowsForChart) {
+    const sorted = [...rowsForChart].sort((a, b) => (a.entry_date < b.entry_date ? -1 : 1));
+    const labels = sorted.map((r) => r.entry_date);
+    const { minWakeTime, maxWakeTime } = getGoals();
+    if (wakeTimeChart) wakeTimeChart.destroy();
+    wakeTimeChart = new Chart(wakeTimeCanvas, {
+      type: "line",
+      data: {
+        labels,
+        datasets: [
+          {
+            label: "Wake time",
+            data: sorted.map((r) => minutesSinceNoon(r.wake_time.slice(0, 5))),
+            showLine: false,
+            pointRadius: 4,
+            pointBackgroundColor: CHART_COLORS.wake,
+            borderColor: CHART_COLORS.wake,
+          },
+          goalLineDataset("Earliest goal", minutesSinceNoon(minWakeTime), labels),
+          goalLineDataset("Latest goal", minutesSinceNoon(maxWakeTime), labels),
+        ],
+      },
+      options: clockChartOptions(labels),
+    });
+  }
+
+  function renderBedTimeChart(rowsForChart) {
+    const sorted = [...rowsForChart].sort((a, b) => (a.entry_date < b.entry_date ? -1 : 1));
+    const labels = sorted.map((r) => r.entry_date);
+    const { minBedTime, maxBedTime } = getBedTimeGoals(getGoals());
+    if (bedTimeChart) bedTimeChart.destroy();
+    bedTimeChart = new Chart(bedTimeCanvas, {
+      type: "line",
+      data: {
+        labels,
+        datasets: [
+          {
+            label: "Bed time",
+            data: sorted.map((r) => minutesSinceNoon(r.bed_time.slice(0, 5))),
+            showLine: false,
+            pointRadius: 4,
+            pointBackgroundColor: CHART_COLORS.bedtime,
+            borderColor: CHART_COLORS.bedtime,
+          },
+          goalLineDataset("Earliest goal", minutesSinceNoon(minBedTime), labels),
+          goalLineDataset("Latest goal", minutesSinceNoon(maxBedTime), labels),
+        ],
+      },
+      options: clockChartOptions(labels),
+    });
+  }
+
+  function renderTimingConsistencyChart(rowsForChart) {
+    const goals = getGoals();
+    const bedGoals = getBedTimeGoals(goals);
+    const grouped = groupTimingConsistencyByPeriod(rowsForChart, "week", goals, bedGoals);
+    const labels = grouped.map((g) => g.key);
+    if (timingConsistencyChart) timingConsistencyChart.destroy();
+    timingConsistencyChart = new Chart(timingConsistencyCanvas, {
+      type: "line",
+      data: {
+        labels,
+        datasets: [
+          {
+            label: "Wake time in range %",
+            data: grouped.map((g) => g.wakeInRangePct),
+            borderColor: CHART_COLORS.wake,
+            backgroundColor: CHART_COLORS.wake,
+            tension: 0.25,
+            spanGaps: true,
+          },
+          {
+            label: "Bed time in range %",
+            data: grouped.map((g) => g.bedInRangePct),
+            borderColor: CHART_COLORS.bedtime,
+            backgroundColor: CHART_COLORS.bedtime,
+            tension: 0.25,
+            spanGaps: true,
+          },
+        ],
+      },
+      options: {
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            min: 0,
+            max: 100,
+            grid: { color: CHART_COLORS.grid },
+            ticks: { color: CHART_COLORS.text, callback: (v) => `${v}%` },
+          },
+          x: { grid: { color: CHART_COLORS.grid }, ticks: xAxisTicksOptions(labels, "week") },
+        },
+        plugins: {
+          legend: { labels: { color: CHART_COLORS.text } },
+          tooltip: {
+            callbacks: {
+              label: (ctx) =>
+                `${ctx.dataset.label}: ${ctx.parsed.y === null ? "–" : ctx.parsed.y.toFixed(0) + "%"}`,
+            },
+          },
+        },
+      },
+    });
+  }
+
   function renderNapsChart(rowsForChart) {
     const grouped = groupNapCountByPeriod(rowsForChart, "week");
     const labels = grouped.map((g) => g.key);
@@ -728,6 +927,9 @@ export function initDashboardView(container) {
     renderDurationChart(filtered);
     renderTimesChart(filtered);
     renderConsistencyChart(filtered);
+    renderWakeTimeChart(filtered);
+    renderBedTimeChart(filtered);
+    renderTimingConsistencyChart(filtered);
     renderNapsChart(filtered);
     renderTagBreakdownChart(rows);
     renderLocationBreakdownChart(rows);
