@@ -25,6 +25,34 @@ function sortNewestFirst(notes) {
   return [...notes].sort((a, b) => sortKey(b) - sortKey(a));
 }
 
+function sortOldestFirst(notes) {
+  return [...notes].sort((a, b) => sortKey(a) - sortKey(b));
+}
+
+function noteToExportBlock(note) {
+  const meta = formatNoteMeta(note);
+  const header = meta ? `${note.heading}\n${meta}` : note.heading;
+  return note.body ? `${header}\n\n${note.body}` : header;
+}
+
+function notesToExportText(notes) {
+  return sortOldestFirst(notes).map(noteToExportBlock).join("\n\n---\n\n");
+}
+
+function todayIsoDate() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function downloadTextFile(filename, text) {
+  const blob = new Blob([text], { type: "text/plain" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
 function displayCardHtml(note) {
   const meta = formatNoteMeta(note);
   return `
@@ -70,6 +98,7 @@ export function initTherapyView(container) {
   container.innerHTML = `
     <div class="entry-button-row">
       <button type="button" id="therapy-add" class="secondary">Add entry</button>
+      <button type="button" id="therapy-export" class="secondary">Export notes</button>
     </div>
     <div id="therapy-list"></div>
     <p id="therapy-error" class="error-message" hidden></p>
@@ -78,6 +107,7 @@ export function initTherapyView(container) {
   const listEl = container.querySelector("#therapy-list");
   const errorEl = container.querySelector("#therapy-error");
   const addBtn = container.querySelector("#therapy-add");
+  const exportBtn = container.querySelector("#therapy-export");
 
   let notes = [];
   // Which single row is being edited: a note id, or "new" for an unsaved draft. Switching this
@@ -163,6 +193,11 @@ export function initTherapyView(container) {
     draft = { ...EMPTY_DRAFT };
     editingId = "new";
     render();
+  });
+
+  exportBtn.addEventListener("click", () => {
+    if (notes.length === 0) return;
+    downloadTextFile(`therapy-notes-${todayIsoDate()}.txt`, notesToExportText(notes));
   });
 
   listEl.addEventListener("click", (event) => {
