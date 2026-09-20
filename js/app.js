@@ -5,6 +5,7 @@ import { initTableView } from "./table.js";
 import { initExportView } from "./export.js";
 import { initGoalsView } from "./goals.js";
 import { initTherapyView } from "./therapy.js";
+import { initTipsView } from "./tips.js";
 
 const viewLogin = document.querySelector("#view-login");
 const viewMain = document.querySelector("#view-main");
@@ -21,6 +22,7 @@ const panels = {
   export: document.querySelector("#tab-export"),
   goals: document.querySelector("#tab-goals"),
   therapy: document.querySelector("#tab-therapy"),
+  tips: document.querySelector("#tab-tips"),
 };
 
 const initializers = {
@@ -30,6 +32,7 @@ const initializers = {
   export: initExportView,
   goals: initGoalsView,
   therapy: initTherapyView,
+  tips: initTipsView,
 };
 
 const initialized = {
@@ -39,11 +42,13 @@ const initialized = {
   export: false,
   goals: false,
   therapy: false,
+  tips: false,
 };
 
 // These tabs fetch data from Supabase once, at init, and cache it locally - so they need to be
 // re-initialized (re-fetching fresh data) on every visit, not just the first. Entry manages its
-// own live reload on date change, and Goals is local-storage-only, so neither needs this.
+// own live reload on date change, and Goals/Tips are static (localStorage / hardcoded content),
+// so neither needs this.
 const REFRESH_ON_SHOW = new Set(["trends", "table", "export", "therapy"]);
 
 function showTab(tabName) {

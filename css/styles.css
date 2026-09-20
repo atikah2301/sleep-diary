@@ -289,6 +289,43 @@ input[type="time"] {
   margin: -10px 0 16px;
 }
 
+.tips-section summary {
+  cursor: pointer;
+  font-size: 1.05rem;
+  font-weight: 600;
+  list-style: none;
+}
+
+.tips-section summary::-webkit-details-marker {
+  display: none;
+}
+
+.tips-section summary::before {
+  content: "▸";
+  display: inline-block;
+  width: 1em;
+  color: var(--accent);
+}
+
+.tips-section[open] summary::before {
+  content: "▾";
+}
+
+.tips-section .tips-list {
+  margin: 14px 0 0;
+  padding-left: 20px;
+  color: var(--text-dim);
+}
+
+.tips-section .tips-list li {
+  margin-bottom: 10px;
+  line-height: 1.4;
+}
+
+.tips-section .tips-list li:last-child {
+  margin-bottom: 0;
+}
+
 .entry-date-nav {
   display: flex;
   align-items: flex-end;
