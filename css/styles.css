@@ -394,6 +394,15 @@ button.secondary {
   margin: -8px 0 12px;
 }
 
+.therapy-entry {
+  cursor: pointer;
+}
+
+.therapy-entry.editing {
+  border-color: var(--accent);
+  cursor: default;
+}
+
 .therapy-entry-meta {
   color: var(--text-dim);
   font-size: 0.85rem;
@@ -403,6 +412,12 @@ button.secondary {
 .therapy-entry-body {
   white-space: pre-wrap;
   margin: 0;
+}
+
+.entry-button-row button.primary {
+  width: auto;
+  flex: 1;
+  margin-top: 0;
 }
 
 .summary-grid {
