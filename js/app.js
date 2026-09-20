@@ -4,6 +4,7 @@ import { initDashboardView } from "./dashboard.js";
 import { initTableView } from "./table.js";
 import { initExportView } from "./export.js";
 import { initGoalsView } from "./goals.js";
+import { initTherapyView } from "./therapy.js";
 
 const viewLogin = document.querySelector("#view-login");
 const viewMain = document.querySelector("#view-main");
@@ -19,6 +20,7 @@ const panels = {
   table: document.querySelector("#tab-table"),
   export: document.querySelector("#tab-export"),
   goals: document.querySelector("#tab-goals"),
+  therapy: document.querySelector("#tab-therapy"),
 };
 
 const initializers = {
@@ -27,15 +29,22 @@ const initializers = {
   table: initTableView,
   export: initExportView,
   goals: initGoalsView,
+  therapy: initTherapyView,
 };
 
-const initialized = { entry: false, trends: false, table: false, export: false, goals: false };
+const initialized = {
+  entry: false,
+  trends: false,
+  table: false,
+  export: false,
+  goals: false,
+  therapy: false,
+};
 
-// These three tabs fetch diary_entries from Supabase once, at init, and cache it locally - so
-// they need to be re-initialized (re-fetching fresh data) on every visit, not just the first.
-// Entry manages its own live reload on date change, and Goals is local-storage-only, so neither
-// needs this.
-const REFRESH_ON_SHOW = new Set(["trends", "table", "export"]);
+// These tabs fetch data from Supabase once, at init, and cache it locally - so they need to be
+// re-initialized (re-fetching fresh data) on every visit, not just the first. Entry manages its
+// own live reload on date change, and Goals is local-storage-only, so neither needs this.
+const REFRESH_ON_SHOW = new Set(["trends", "table", "export", "therapy"]);
 
 function showTab(tabName) {
   for (const [name, panel] of Object.entries(panels)) {

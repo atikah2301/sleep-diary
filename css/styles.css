@@ -394,6 +394,17 @@ button.secondary {
   margin: -8px 0 12px;
 }
 
+.therapy-entry-meta {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  margin: -8px 0 12px;
+}
+
+.therapy-entry-body {
+  white-space: pre-wrap;
+  margin: 0;
+}
+
 .summary-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
