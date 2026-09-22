@@ -257,12 +257,16 @@ textarea:focus {
 
 /* iOS Safari renders type="date"/type="time" with a native minimum content width that
    ignores our width:100%, so it can overflow its container on narrow phone screens.
-   Turning off the native appearance lets our own box sizing control it instead. */
+   Turning off the native appearance lets our own box sizing control it instead. That
+   same override also lets the browser shrink an empty field's height to fit its "--:--"
+   placeholder text, which is smaller than a filled-in value - pin an explicit height so
+   empty and filled fields always match. */
 input[type="date"],
 input[type="time"] {
   -webkit-appearance: none;
   appearance: none;
   min-width: 0;
+  height: 46px;
 }
 
 .field-row {
