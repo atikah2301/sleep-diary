@@ -1,7 +1,11 @@
 /** Adds a slim duplicate horizontal scrollbar above `scrollEl` (a horizontally-scrolling
  * container) that mirrors its scroll position, so wide tables don't require scrolling all
  * the way down to reach the scrollbar at the bottom. Keeps itself in sync with `contentEl`'s
- * width (e.g. when optional columns are toggled on/off) via a ResizeObserver. */
+ * width (e.g. when optional columns are toggled on/off) via a ResizeObserver — that alone
+ * only catches width changes when `contentEl`'s own border box grows (as a <table> with
+ * auto layout does). When `contentEl` is a plain wrapper div whose box stays pinned to its
+ * container regardless of the tables inside it, resizing never fires; the returned function
+ * lets the caller force a resync right after it rewrites that wrapper's content. */
 export function addTopScrollbar(scrollEl, contentEl) {
   const topBar = document.createElement("div");
   topBar.className = "table-scroll-top";
@@ -22,4 +26,6 @@ export function addTopScrollbar(scrollEl, contentEl) {
 
   new ResizeObserver(sync).observe(contentEl);
   sync();
+
+  return sync;
 }

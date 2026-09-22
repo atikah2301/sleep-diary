@@ -227,7 +227,10 @@ export function initExportView(container) {
   const napsToggle = container.querySelector("#toggle-naps");
   const weeklySummaryToggle = container.querySelector("#toggle-weekly-summary");
 
-  addTopScrollbar(container.querySelector(".table-scroll"), container.querySelector("#export-preview-table"));
+  const syncScrollbar = addTopScrollbar(
+    container.querySelector(".table-scroll"),
+    container.querySelector("#export-preview-table"),
+  );
 
   let allEntries = [];
 
@@ -269,6 +272,7 @@ export function initExportView(container) {
   function refresh() {
     const entries = filteredEntries();
     renderPreviewTable(container, weekGroups(entries, weeklySummaryToggle.checked), activeColumns());
+    syncScrollbar();
     if (entries.length === allEntries.length) {
       summaryEl.textContent = `Showing all entries (${entries.length}).`;
     } else if (entries.length === 0) {
