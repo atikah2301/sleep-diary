@@ -11,6 +11,7 @@ const viewLogin = document.querySelector("#view-login");
 const viewMain = document.querySelector("#view-main");
 const loginForm = document.querySelector("#login-form");
 const loginPassword = document.querySelector("#login-password");
+const loginPasswordToggle = document.querySelector("#login-password-toggle");
 const loginError = document.querySelector("#login-error");
 const logoutButton = document.querySelector("#logout-button");
 const tabButtons = document.querySelectorAll("nav.tabs button[data-tab]");
@@ -80,6 +81,13 @@ function showLoggedOut() {
   viewLogin.hidden = false;
   loginPassword.value = "";
 }
+
+loginPasswordToggle.addEventListener("click", () => {
+  const showing = loginPassword.type === "text";
+  loginPassword.type = showing ? "password" : "text";
+  loginPasswordToggle.textContent = showing ? "👁️" : "🙈";
+  loginPasswordToggle.setAttribute("aria-label", showing ? "Show password" : "Hide password");
+});
 
 loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
