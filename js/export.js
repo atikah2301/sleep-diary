@@ -173,7 +173,7 @@ export function initExportView(container) {
           <label class="checkbox-label"><input type="checkbox" id="toggle-conversions" /> Show conversions</label>
           <label class="checkbox-label"><input type="checkbox" id="toggle-time-to-sleep" /> Show time to sleep</label>
           <label class="checkbox-label"><input type="checkbox" id="toggle-time-to-rise" /> Show time to rise</label>
-          <label class="checkbox-label"><input type="checkbox" id="toggle-weekly-summary" /> Show weekly totals/averages</label>
+          <label class="checkbox-label"><input type="checkbox" id="toggle-weekly-summary" checked /> Show weekly averages</label>
         </div>
         <div class="export-buttons">
           <button type="button" id="export-excel" class="primary">Download Excel (.xlsx)</button>
