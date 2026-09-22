@@ -44,6 +44,14 @@ self.addEventListener("activate", (event) => {
 
 // Only intercept our own static assets. Everything else (Supabase API calls,
 // third-party CDN scripts) goes straight to the network untouched.
+//
+// Network-first, cache-fallback: iOS's built-in service-worker update check is
+// unreliable for standalone home-screen apps (it often doesn't notice a new
+// sw.js after a full force-quit/relaunch), which left this cache-first version
+// serving stale app-shell files indefinitely whenever that check silently
+// failed. Preferring the network here means the phone always gets fresh files
+// while online, regardless of whether the SW itself has updated; the cache is
+// only a fallback for offline use.
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
   if (event.request.method !== "GET" || url.origin !== self.location.origin) {
@@ -51,13 +59,12 @@ self.addEventListener("fetch", (event) => {
   }
 
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
-      return fetch(event.request).then((response) => {
+    fetch(event.request)
+      .then((response) => {
         const copy = response.clone();
         caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
         return response;
-      });
-    }),
+      })
+      .catch(() => caches.match(event.request)),
   );
 });
