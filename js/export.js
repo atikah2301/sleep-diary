@@ -29,8 +29,8 @@ const COLUMNS = [
   { key: "timeToRise", label: "Time to rise (min)", optional: "timeToRise" },
   { key: "tag", label: "Tag" },
   { key: "sleep_location", label: "Location" },
-  { key: "nap_count", label: "Naps" },
-  { key: "nap_minutes", label: "Nap minutes" },
+  { key: "nap_count", label: "Naps", optional: "naps" },
+  { key: "nap_minutes", label: "Nap minutes", optional: "naps" },
   { key: "notes", label: "Notes" },
   { key: "timeInBedMinutes", label: "Time in bed (min)" },
   { key: "timeInBedHm", label: "Time in bed (h/m)", optional: "conversions" },
@@ -144,15 +144,19 @@ function stickyClass(key) {
   return "";
 }
 
+function cellClass(key) {
+  return `${stickyClass(key)} ${key === "notes" ? "col-notes" : ""}`.trim();
+}
+
 function renderWeekTable(group, columns) {
   const head = `<thead><tr>${columns
-    .map((c) => `<th class="${stickyClass(c.key)}">${c.label}</th>`)
+    .map((c) => `<th class="${cellClass(c.key)}">${c.label}</th>`)
     .join("")}</tr></thead>`;
   const body = group.rows
     .map(
       (row) =>
         `<tr class="${row.isSummaryRow ? "summary-row" : ""}">${columns
-          .map((c) => `<td class="${stickyClass(c.key)}">${row[c.key] ?? ""}</td>`)
+          .map((c) => `<td class="${cellClass(c.key)}">${row[c.key] ?? ""}</td>`)
           .join("")}</tr>`,
     )
     .join("");
@@ -196,6 +200,7 @@ export function initExportView(container) {
           <label class="checkbox-label"><input type="checkbox" id="toggle-conversions" /> Show conversions</label>
           <label class="checkbox-label"><input type="checkbox" id="toggle-time-to-sleep" /> Show time to sleep</label>
           <label class="checkbox-label"><input type="checkbox" id="toggle-time-to-rise" /> Show time to rise</label>
+          <label class="checkbox-label"><input type="checkbox" id="toggle-naps" /> Show naps</label>
           <label class="checkbox-label"><input type="checkbox" id="toggle-weekly-summary" checked /> Show weekly averages</label>
         </div>
         <div class="export-buttons">
@@ -219,6 +224,7 @@ export function initExportView(container) {
   const conversionsToggle = container.querySelector("#toggle-conversions");
   const timeToSleepToggle = container.querySelector("#toggle-time-to-sleep");
   const timeToRiseToggle = container.querySelector("#toggle-time-to-rise");
+  const napsToggle = container.querySelector("#toggle-naps");
   const weeklySummaryToggle = container.querySelector("#toggle-weekly-summary");
 
   addTopScrollbar(container.querySelector(".table-scroll"), container.querySelector("#export-preview-table"));
@@ -231,6 +237,7 @@ export function initExportView(container) {
       if (c.optional === "conversions") return conversionsToggle.checked;
       if (c.optional === "timeToSleep") return timeToSleepToggle.checked;
       if (c.optional === "timeToRise") return timeToRiseToggle.checked;
+      if (c.optional === "naps") return napsToggle.checked;
       return true;
     });
   }
@@ -289,8 +296,8 @@ export function initExportView(container) {
   fromInput.addEventListener("change", refresh);
   toInput.addEventListener("change", refresh);
 
-  [dayToggle, conversionsToggle, timeToSleepToggle, timeToRiseToggle, weeklySummaryToggle].forEach((el) =>
-    el.addEventListener("change", refresh),
+  [dayToggle, conversionsToggle, timeToSleepToggle, timeToRiseToggle, napsToggle, weeklySummaryToggle].forEach(
+    (el) => el.addEventListener("change", refresh),
   );
 
   container.querySelector("#export-excel").addEventListener("click", () => {

@@ -16,8 +16,8 @@ const COLUMNS = [
   { key: "timeToRise", label: "Time to rise (min)", optional: "timeToRise" },
   { key: "tag", label: "Tag" },
   { key: "sleep_location", label: "Location" },
-  { key: "nap_count", label: "Naps" },
-  { key: "nap_minutes", label: "Nap min" },
+  { key: "nap_count", label: "Naps", optional: "naps" },
+  { key: "nap_minutes", label: "Nap min", optional: "naps" },
   { key: "timeInBedMinutes", label: "Time in bed (min)" },
   { key: "timeInBedHm", label: "Time in bed (h/m)", optional: "conversions" },
   { key: "totalSleepTimeMinutes", label: "Total sleep time (min)" },
@@ -164,6 +164,7 @@ export function initTableView(container) {
         <label class="checkbox-label"><input type="checkbox" id="table-toggle-conversions" /> Show conversions</label>
         <label class="checkbox-label"><input type="checkbox" id="table-toggle-time-to-sleep" /> Show time to sleep</label>
         <label class="checkbox-label"><input type="checkbox" id="table-toggle-time-to-rise" /> Show time to rise</label>
+        <label class="checkbox-label"><input type="checkbox" id="table-toggle-naps" /> Show naps</label>
         <label class="checkbox-label"><input type="checkbox" id="table-toggle-weekly-summary" checked /> Show weekly averages</label>
       </div>
       <p id="table-error" class="error-message" hidden></p>
@@ -183,6 +184,7 @@ export function initTableView(container) {
   const conversionsToggle = container.querySelector("#table-toggle-conversions");
   const timeToSleepToggle = container.querySelector("#table-toggle-time-to-sleep");
   const timeToRiseToggle = container.querySelector("#table-toggle-time-to-rise");
+  const napsToggle = container.querySelector("#table-toggle-naps");
   const weeklySummaryToggle = container.querySelector("#table-toggle-weekly-summary");
 
   addTopScrollbar(container.querySelector(".table-scroll"), tableEl);
@@ -205,6 +207,7 @@ export function initTableView(container) {
       if (c.optional === "conversions") return conversionsToggle.checked;
       if (c.optional === "timeToSleep") return timeToSleepToggle.checked;
       if (c.optional === "timeToRise") return timeToRiseToggle.checked;
+      if (c.optional === "naps") return napsToggle.checked;
       return true;
     });
   }
@@ -268,8 +271,8 @@ export function initTableView(container) {
     render();
   });
 
-  [dayToggle, conversionsToggle, timeToSleepToggle, timeToRiseToggle, weeklySummaryToggle].forEach((el) =>
-    el.addEventListener("change", render),
+  [dayToggle, conversionsToggle, timeToSleepToggle, timeToRiseToggle, napsToggle, weeklySummaryToggle].forEach(
+    (el) => el.addEventListener("change", render),
   );
 
   tableEl.addEventListener("click", (event) => {
