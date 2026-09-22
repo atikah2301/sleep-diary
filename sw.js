@@ -13,6 +13,8 @@ const APP_SHELL = [
   "./js/time.js",
   "./js/metrics.js",
   "./js/app.js",
+  "./js/version.js",
+  "./js/version-init.js",
   "./js/entry.js",
   "./js/dashboard.js",
   "./js/table.js",

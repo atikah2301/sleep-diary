@@ -26,6 +26,11 @@ jobs:
       - name: Stamp service worker cache version
         run: sed -i "s/__CACHE_VERSION__/${{ github.sha }}/" sw.js
 
+      - name: Stamp deploy version info
+        run: |
+          sed -i "s/__COMMIT_SHA__/${{ github.sha }}/" js/version.js
+          sed -i "s/__DEPLOY_TIME__/$(date -u +'%Y-%m-%d %H:%M UTC')/" js/version.js
+
       - name: Configure Pages
         uses: actions/configure-pages@v5
 

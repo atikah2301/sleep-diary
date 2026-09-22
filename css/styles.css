@@ -649,6 +649,18 @@ table.data-table tbody tr:hover {
   background: var(--surface-raised);
 }
 
+.version-footer {
+  position: fixed;
+  right: 6px;
+  bottom: 4px;
+  font-family: monospace;
+  font-size: 9px;
+  color: var(--text-dim);
+  opacity: 0.5;
+  pointer-events: none;
+  z-index: 1000;
+}
+
 @page {
   size: landscape;
 }
@@ -681,5 +693,9 @@ table.data-table tbody tr:hover {
 
   .sticky-col {
     position: static;
+  }
+
+  .version-footer {
+    display: none;
   }
 }
