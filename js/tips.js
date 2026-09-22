@@ -1,7 +1,6 @@
 const SECTIONS = [
   {
     title: "Falling asleep & winding down",
-    open: true,
     items: [
       "Start a wind-down routine 30–60 minutes before bed — dim the lights, and switch to a low-key activity like reading or stretching.",
       "Cut screens (phone, TV, laptop) at least 30 minutes before bed. Blue light and stimulating content both delay sleep.",
