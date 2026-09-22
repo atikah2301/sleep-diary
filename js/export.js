@@ -321,6 +321,17 @@ export function initExportView(container) {
   });
 
   container.querySelector("#export-pdf").addEventListener("click", () => {
+    // Chrome's "Save as PDF" print destination suggests document.title as the filename,
+    // so swap it in just for the print dialog and restore it once the dialog closes.
+    const originalTitle = document.title;
+    document.title = `sleep-diary-${rangeSuffix()}`;
+    window.addEventListener(
+      "afterprint",
+      () => {
+        document.title = originalTitle;
+      },
+      { once: true },
+    );
     window.print();
   });
 
