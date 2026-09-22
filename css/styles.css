@@ -740,8 +740,7 @@ table.data-table tbody tr:hover {
   table.export-preview td {
     border: 1px solid #999;
     color: #000;
-    padding: 5px 4px;
-    line-height: 1.4;
+    padding: 3px 4px;
     word-break: break-word;
   }
 
@@ -749,10 +748,6 @@ table.data-table tbody tr:hover {
   .sticky-col-2 {
     width: auto;
     min-width: 0;
-  }
-
-  .col-notes {
-    max-width: 70px;
   }
 
   table.week-table {
