@@ -14,9 +14,11 @@ function todayISO() {
 
 function formatMinutes(mins) {
   if (mins === null || Number.isNaN(mins)) return "–";
-  const h = Math.floor(Math.abs(mins) / 60);
-  const m = Math.abs(mins) % 60;
-  return `${h}h ${String(m).padStart(2, "0")}m`;
+  const sign = mins < 0 ? "-" : "";
+  const abs = Math.abs(mins);
+  const h = Math.floor(abs / 60);
+  const m = abs % 60;
+  return `${sign}${h}h ${String(m).padStart(2, "0")}m`;
 }
 
 function formatDateLabel(dateStr) {
@@ -65,6 +67,24 @@ function validateNonNegativeInteger(inputEl, errorEl) {
   errorEl.hidden = isValid;
   if (!isValid) errorEl.textContent = "Must be a whole number, 0 or greater.";
   return isValid;
+}
+
+// Awake minutes can't exceed the sleep-to-wake window itself (see metrics.js's
+// totalSleepTimeMinutes = (wake - sleep) - awake_minutes) - a fixed ceiling wouldn't catch
+// this, since what's "too much" depends on how long that window is on this particular night.
+function validateAwakeMinutes(inputEl, errorEl, bedTime, sleepTime, wakeTime, risingTime) {
+  if (!validateNonNegativeInteger(inputEl, errorEl)) return false;
+
+  if (bedTime && sleepTime && wakeTime && risingTime) {
+    const [, sleep, wake] = unwrapSequence([bedTime, sleepTime, wakeTime, risingTime]);
+    const sleepWindowMinutes = wake - sleep;
+    if (Number(inputEl.value) > sleepWindowMinutes) {
+      errorEl.hidden = false;
+      errorEl.textContent = `Can't exceed the ${sleepWindowMinutes} min between falling asleep and waking.`;
+      return false;
+    }
+  }
+  return true;
 }
 
 const DEFAULT_SLEEP_LOCATION = "In my bed, at home";
@@ -248,15 +268,23 @@ export function initEntryView(container) {
   }
 
   function updateFormValidity() {
-    const awakeningsOk = validateNonNegativeInteger(awakeningsInput, awakeningsErrorEl);
-    const awakeMinutesOk = validateNonNegativeInteger(awakeMinutesInput, awakeMinutesErrorEl);
-    const napCountOk = validateNonNegativeInteger(napCountInput, napCountErrorEl);
-    const napMinutesOk = validateNonNegativeInteger(napMinutesInput, napMinutesErrorEl);
-
     const bedTime = bedTimeInput.value;
     const sleepTime = resolveSleepTime();
     const wakeTime = wakeTimeInput.value;
     const risingTime = risingTimeInput.value;
+
+    const awakeningsOk = validateNonNegativeInteger(awakeningsInput, awakeningsErrorEl);
+    const awakeMinutesOk = validateAwakeMinutes(
+      awakeMinutesInput,
+      awakeMinutesErrorEl,
+      bedTime,
+      sleepTime,
+      wakeTime,
+      risingTime,
+    );
+    const napCountOk = validateNonNegativeInteger(napCountInput, napCountErrorEl);
+    const napMinutesOk = validateNonNegativeInteger(napMinutesInput, napMinutesErrorEl);
+
     const orderIssues =
       bedTime && sleepTime && wakeTime && risingTime
         ? getOrderIssues(bedTime, sleepTime, wakeTime, risingTime)
