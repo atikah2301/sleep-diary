@@ -2,6 +2,7 @@ import { supabase } from "./supabase-client.js";
 import { computeMetrics, computeWeekSummary } from "./metrics.js";
 import { addTopScrollbar } from "./table-scroll-sync.js";
 import { groupByWeek, formatWeekHeading } from "./date.js";
+import { isMobileDevice, retryHint } from "./device.js";
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -136,10 +137,6 @@ function downloadExcel(rows, filenameSuffix, columns) {
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, "Sleep diary");
   XLSX.writeFile(workbook, `sleep-diary-${filenameSuffix}.xlsx`);
-}
-
-function isMobileDevice() {
-  return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 }
 
 function stickyClass(key) {
@@ -349,7 +346,7 @@ export function initExportView(container) {
       .order("entry_date", { ascending: true });
 
     if (error) {
-      errorEl.textContent = error.message;
+      errorEl.textContent = `${error.message} ${retryHint()}`;
       errorEl.hidden = false;
       return;
     }

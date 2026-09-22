@@ -2,6 +2,7 @@ import { supabase } from "./supabase-client.js";
 import { computeMetrics, computeWeekSummary } from "./metrics.js";
 import { addTopScrollbar } from "./table-scroll-sync.js";
 import { toDateStr, mondayOf, addDays, formatWeekHeading } from "./date.js";
+import { retryHint } from "./device.js";
 
 const COLUMNS = [
   { key: "entry_date", label: "Date" },
@@ -168,6 +169,8 @@ export function initTableView(container) {
         <label class="checkbox-label"><input type="checkbox" id="table-toggle-weekly-summary" checked /> Show weekly averages</label>
       </div>
       <p id="table-error" class="error-message" aria-live="polite" hidden></p>
+      <p id="table-loading" class="hint">Loading your sleep data…</p>
+      <p id="table-empty" class="hint" hidden>No entries yet — add your first night in the Entry tab.</p>
       <div class="table-scroll">
         <table class="export-preview data-table" id="diary-table"></table>
       </div>
@@ -175,6 +178,8 @@ export function initTableView(container) {
   `;
 
   const errorEl = container.querySelector("#table-error");
+  const loadingEl = container.querySelector("#table-loading");
+  const emptyEl = container.querySelector("#table-empty");
   const tableEl = container.querySelector("#diary-table");
   const weekLabel = container.querySelector("#week-label");
   const prevBtn = container.querySelector("#week-prev");
@@ -221,6 +226,10 @@ export function initTableView(container) {
   }
 
   function render() {
+    emptyEl.hidden = rows.length > 0;
+    tableEl.hidden = rows.length === 0;
+    if (rows.length === 0) return;
+
     weekLabel.textContent = `w/c ${formatWeekHeading(weekStart)}`;
 
     const sorted = [...rowsForWeek()].sort((a, b) => {
@@ -289,13 +298,15 @@ export function initTableView(container) {
   });
 
   async function loadRows() {
+    loadingEl.hidden = false;
     const { data, error } = await supabase
       .from("diary_entries")
       .select("*")
       .order("entry_date", { ascending: true });
+    loadingEl.hidden = true;
 
     if (error) {
-      errorEl.textContent = error.message;
+      errorEl.textContent = `${error.message} ${retryHint()}`;
       errorEl.hidden = false;
       return;
     }
