@@ -10,6 +10,7 @@ import { initTipsView } from "./tips.js";
 const viewLogin = document.querySelector("#view-login");
 const viewMain = document.querySelector("#view-main");
 const loginForm = document.querySelector("#login-form");
+const loginEmail = document.querySelector("#login-email");
 const loginPassword = document.querySelector("#login-password");
 const loginPasswordToggle = document.querySelector("#login-password-toggle");
 const loginError = document.querySelector("#login-error");
@@ -93,9 +94,9 @@ loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   loginError.hidden = true;
   try {
-    await signIn(loginPassword.value);
+    await signIn(loginEmail.value, loginPassword.value);
   } catch (err) {
-    loginError.textContent = "Incorrect password.";
+    loginError.textContent = "Incorrect email or password.";
     loginError.hidden = false;
   }
 });
