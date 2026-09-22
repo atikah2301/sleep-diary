@@ -1,6 +1,3 @@
--- Run this once in your Supabase project's SQL editor (Database > SQL Editor).
--- See README.md "Setup" for the full one-time setup checklist this fits into.
-
 create type sleep_tag as enum ('Office', 'WFH', 'No alarm');
 create type sleep_location_type as enum ('In my bed, at home', 'In a bed, elsewhere', 'On the sofa', 'Other');
 
@@ -52,36 +49,4 @@ create policy "authenticated users can update diary_entries"
 
 create policy "authenticated users can delete diary_entries"
   on diary_entries for delete
-  using (auth.uid() is not null);
-
-create table therapy_notes (
-  id bigint generated always as identity primary key,
-  heading text not null,
-  session_date date,
-  session_time time,
-  body text,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
-create trigger therapy_notes_set_updated_at
-before update on therapy_notes
-for each row execute function set_updated_at();
-
-alter table therapy_notes enable row level security;
-
-create policy "authenticated users can read therapy_notes"
-  on therapy_notes for select
-  using (auth.uid() is not null);
-
-create policy "authenticated users can insert therapy_notes"
-  on therapy_notes for insert
-  with check (auth.uid() is not null);
-
-create policy "authenticated users can update therapy_notes"
-  on therapy_notes for update
-  using (auth.uid() is not null);
-
-create policy "authenticated users can delete therapy_notes"
-  on therapy_notes for delete
   using (auth.uid() is not null);
