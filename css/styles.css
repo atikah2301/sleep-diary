@@ -738,6 +738,7 @@ table.data-table tbody tr:hover {
 
   table.export-preview {
     font-size: 0.6rem;
+    table-layout: fixed;
   }
 
   table.export-preview th,
@@ -755,7 +756,7 @@ table.data-table tbody tr:hover {
   }
 
   .col-notes {
-    max-width: 90px;
+    width: 90px;
   }
 
   table.week-table {
