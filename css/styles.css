@@ -592,6 +592,18 @@ table.export-preview {
   margin-top: 16px;
 }
 
+.week-table-heading {
+  margin: 20px 0 0;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+
+table.week-table:first-of-type,
+.week-table-heading:first-of-type {
+  margin-top: 0;
+}
+
 table.export-preview th,
 table.export-preview td {
   border: 1px solid var(--border);
@@ -732,6 +744,20 @@ table.data-table tbody tr:hover {
   .sticky-col-2 {
     width: auto;
     min-width: 0;
+  }
+
+  table.week-table {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  table.week-table:not(:last-of-type) {
+    page-break-after: always;
+    break-after: page;
+  }
+
+  .week-table-heading {
+    color: #000;
   }
 
   .summary-row td {

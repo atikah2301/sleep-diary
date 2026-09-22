@@ -111,6 +111,20 @@ function withWeeklySummaries(entries) {
   });
 }
 
+/** Groups entries into one formatted row-list per calendar week, for the preview/print
+ * table — each week renders as its own <table> so it lands on its own printed page. */
+function weekGroups(entries, includeSummary) {
+  const withMetrics = attachMetrics(entries);
+  return groupByWeek(withMetrics).map(({ weekStart, rows }) => {
+    const formatted = rows.map(formatRow);
+    if (includeSummary) {
+      const summary = computeWeekSummary(rows);
+      if (summary) formatted.push(formatSummaryRow(summary, weekStart));
+    }
+    return { weekStart, rows: formatted };
+  });
+}
+
 function downloadExcel(rows, filenameSuffix, columns) {
   const worksheet = XLSX.utils.json_to_sheet(
     rows.map((row) => {
@@ -130,14 +144,11 @@ function stickyClass(key) {
   return "";
 }
 
-function renderPreviewTable(container, rows, columns) {
-  const table = container.querySelector("#export-preview-table");
-  if (rows.length === 0) {
-    table.innerHTML = "<tr><td>No entries yet.</td></tr>";
-    return;
-  }
-  const head = `<tr>${columns.map((c) => `<th class="${stickyClass(c.key)}">${c.label}</th>`).join("")}</tr>`;
-  const body = rows
+function renderWeekTable(group, columns) {
+  const head = `<thead><tr>${columns
+    .map((c) => `<th class="${stickyClass(c.key)}">${c.label}</th>`)
+    .join("")}</tr></thead>`;
+  const body = group.rows
     .map(
       (row) =>
         `<tr class="${row.isSummaryRow ? "summary-row" : ""}">${columns
@@ -145,7 +156,19 @@ function renderPreviewTable(container, rows, columns) {
           .join("")}</tr>`,
     )
     .join("");
-  table.innerHTML = head + body;
+  return `
+    <p class="week-table-heading">Week of ${formatWeekHeading(group.weekStart)}</p>
+    <table class="export-preview week-table">${head}<tbody>${body}</tbody></table>
+  `;
+}
+
+function renderPreviewTable(container, groups, columns) {
+  const wrapper = container.querySelector("#export-preview-table");
+  if (groups.length === 0) {
+    wrapper.innerHTML = "<p>No entries yet.</p>";
+    return;
+  }
+  wrapper.innerHTML = groups.map((group) => renderWeekTable(group, columns)).join("");
 }
 
 export function initExportView(container) {
@@ -183,7 +206,7 @@ export function initExportView(container) {
       <p id="export-error" class="error-message" hidden></p>
       <p class="hint" id="export-range-summary" style="margin: 0 0 12px"></p>
       <div class="table-scroll">
-        <table class="export-preview" id="export-preview-table"></table>
+        <div id="export-preview-table"></div>
       </div>
     </div>
   `;
@@ -238,7 +261,7 @@ export function initExportView(container) {
 
   function refresh() {
     const entries = filteredEntries();
-    renderPreviewTable(container, displayRows(), activeColumns());
+    renderPreviewTable(container, weekGroups(entries, weeklySummaryToggle.checked), activeColumns());
     if (entries.length === allEntries.length) {
       summaryEl.textContent = `Showing all entries (${entries.length}).`;
     } else if (entries.length === 0) {
