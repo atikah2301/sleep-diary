@@ -4,7 +4,10 @@
 export const COMMIT_SHA = "__COMMIT_SHA__";
 export const DEPLOY_TIME = "__DEPLOY_TIME__";
 
-export function renderVersion(el) {
+export function renderVersion(elements) {
   const isDeployed = !COMMIT_SHA.startsWith("__");
-  el.textContent = isDeployed ? `${COMMIT_SHA.slice(0, 7)} · ${DEPLOY_TIME}` : "dev build";
+  const text = isDeployed ? `${COMMIT_SHA.slice(0, 7)} · ${DEPLOY_TIME}` : "dev build";
+  elements.forEach((el) => {
+    el.textContent = text;
+  });
 }

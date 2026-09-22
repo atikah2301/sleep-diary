@@ -129,11 +129,14 @@ nav.tabs button.editing.active {
   width: 100%;
 }
 
+.sidebar .title-version {
+  order: 0;
+}
+
 .sidebar h1 {
   font-size: 1.25rem;
   margin: 0;
   padding: 20px 0;
-  order: 0;
 }
 
 .sidebar #logout-button {
@@ -649,16 +652,26 @@ table.data-table tbody tr:hover {
   background: var(--surface-raised);
 }
 
-.version-footer {
-  position: fixed;
-  right: 6px;
-  bottom: 4px;
+.title-version {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.version-tag {
   font-family: monospace;
   font-size: 9px;
   color: var(--text-dim);
-  opacity: 0.5;
-  pointer-events: none;
-  z-index: 1000;
+  opacity: 0.6;
+  white-space: nowrap;
+}
+
+@media (min-width: 900px) {
+  .title-version {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
 }
 
 @page {
@@ -693,9 +706,5 @@ table.data-table tbody tr:hover {
 
   .sticky-col {
     position: static;
-  }
-
-  .version-footer {
-    display: none;
   }
 }

@@ -4,4 +4,4 @@
 // something else is broken.
 import { renderVersion } from "./version.js";
 
-renderVersion(document.querySelector("#app-version"));
+renderVersion(document.querySelectorAll(".version-tag"));
