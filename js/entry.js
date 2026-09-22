@@ -24,13 +24,9 @@ function formatDateLabel(dateStr) {
   return d.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
 }
 
-function formatWeekdayDate(dateStr) {
+function formatWeekday(dateStr) {
   const d = new Date(`${dateStr}T00:00:00`);
-  const weekday = d.toLocaleDateString(undefined, { weekday: "short" });
-  const day = String(d.getDate()).padStart(2, "0");
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const year = String(d.getFullYear()).slice(-2);
-  return `${weekday} ${day}/${month}/${year}`;
+  return d.toLocaleDateString(undefined, { weekday: "short" });
 }
 
 function addDaysToISODate(dateStr, n) {
@@ -443,7 +439,7 @@ export function initEntryView(container) {
     }
     navBlockedMsgEl.hidden = true;
     dateInput.value = newDate;
-    dateWeekdayEl.textContent = formatWeekdayDate(newDate);
+    dateWeekdayEl.textContent = formatWeekday(newDate);
     loadedDate = newDate;
     showingCancelFeedback = false;
     clearTimeout(cancelFeedbackTimer);
@@ -545,7 +541,7 @@ export function initEntryView(container) {
   });
 
   dateInput.value = yesterdayISO();
-  dateWeekdayEl.textContent = formatWeekdayDate(dateInput.value);
+  dateWeekdayEl.textContent = formatWeekday(dateInput.value);
   loadedDate = dateInput.value;
   loadEntryForDate(dateInput.value);
 }
