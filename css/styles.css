@@ -465,6 +465,10 @@ button.secondary {
   margin: -8px 0 12px;
 }
 
+#therapy-list {
+  margin-top: 12px;
+}
+
 .therapy-entry {
   cursor: pointer;
 }
