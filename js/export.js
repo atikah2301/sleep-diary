@@ -138,6 +138,10 @@ function downloadExcel(rows, filenameSuffix, columns) {
   XLSX.writeFile(workbook, `sleep-diary-${filenameSuffix}.xlsx`);
 }
 
+function isMobileDevice() {
+  return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+}
+
 function stickyClass(key) {
   if (key === "entry_date") return "sticky-col sticky-col-1";
   if (key === "dayOfWeek") return "sticky-col sticky-col-2";
@@ -207,6 +211,7 @@ export function initExportView(container) {
           <button type="button" id="export-excel" class="primary">Download Excel (.xlsx)</button>
           <button type="button" id="export-pdf" class="primary">Print / Save as PDF</button>
         </div>
+        <p class="hint" id="export-pdf-hint" style="margin: 8px 0 0"></p>
       </div>
       <p id="export-error" class="error-message" hidden></p>
       <p class="hint" id="export-range-summary" style="margin: 0 0 12px"></p>
@@ -226,6 +231,11 @@ export function initExportView(container) {
   const timeToRiseToggle = container.querySelector("#toggle-time-to-rise");
   const napsToggle = container.querySelector("#toggle-naps");
   const weeklySummaryToggle = container.querySelector("#toggle-weekly-summary");
+  const pdfHintEl = container.querySelector("#export-pdf-hint");
+
+  pdfHintEl.textContent = isMobileDevice()
+    ? 'Hint: in the print preview, tap the share icon and choose "Save to Files" (iOS) or "Save as PDF" (Android).'
+    : 'Hint: in the printer window, set the destination/printer to "Save as PDF".';
 
   const syncScrollbar = addTopScrollbar(
     container.querySelector(".table-scroll"),
