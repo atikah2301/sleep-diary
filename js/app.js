@@ -3,7 +3,7 @@ import { initEntryView } from "./entry.js";
 import { initDashboardView } from "./dashboard.js";
 import { initTableView } from "./table.js";
 import { initExportView } from "./export.js";
-import { initGoalsView } from "./goals.js";
+import { initGoalsView, loadGoals } from "./goals.js";
 import { initTherapyView } from "./therapy.js";
 import { initTipsView } from "./tips.js";
 
@@ -48,9 +48,8 @@ const initialized = {
 
 // These tabs fetch data from Supabase once, at init, and cache it locally - so they need to be
 // re-initialized (re-fetching fresh data) on every visit, not just the first. Entry manages its
-// own live reload on date change, and Goals/Tips are static (localStorage / hardcoded content),
-// so neither needs this.
-const REFRESH_ON_SHOW = new Set(["trends", "table", "export", "therapy"]);
+// own live reload on date change, and Tips is static (hardcoded content), so neither needs this.
+const REFRESH_ON_SHOW = new Set(["trends", "table", "export", "therapy", "goals"]);
 
 function showTab(tabName) {
   for (const [name, panel] of Object.entries(panels)) {
@@ -74,6 +73,7 @@ function showLoggedIn() {
     initialized.entry = true;
     initializers.entry(panels.entry);
   }
+  loadGoals();
 }
 
 function showLoggedOut() {
