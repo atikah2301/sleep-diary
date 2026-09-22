@@ -23,6 +23,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Check JS syntax
+        run: |
+          for f in js/*.js; do
+            node --input-type=module --check < "$f" || { echo "Syntax error in $f"; exit 1; }
+          done
+
       - name: Stamp service worker cache version
         run: sed -i "s/__CACHE_VERSION__/${{ github.sha }}/" sw.js
 
