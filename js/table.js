@@ -158,7 +158,7 @@ export function initTableView(container) {
         <button type="button" id="week-next" aria-label="Next week">▶</button>
       </div>
       <button type="button" id="week-today" class="secondary">Jump to this week</button>
-      <p class="hint" style="margin: 0 0 12px">Select a row to open it for editing. Select a column header to sort.</p>
+      <p class="hint" style="margin: 8px 0 12px">Select a row to open it for editing. Select a column header to sort.</p>
       <div class="checkbox-group">
         <label class="checkbox-label"><input type="checkbox" id="table-toggle-day" /> Show day</label>
         <label class="checkbox-label"><input type="checkbox" id="table-toggle-conversions" /> Show conversions</label>
