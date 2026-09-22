@@ -306,6 +306,7 @@ input[type="time"] {
 
 #notes {
   margin-bottom: 4px;
+  resize: none;
 }
 
 .char-counter {
