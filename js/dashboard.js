@@ -2,6 +2,8 @@ import { supabase } from "./supabase-client.js";
 import { computeMetrics } from "./metrics.js";
 import { minutesSinceNoon, clockFromMinutesSinceNoon } from "./time.js";
 import { getGoals, getBedTimeGoals } from "./goals.js";
+import { mondayOf, addDays, toDateStr } from "./date.js";
+import { retryHint } from "./device.js";
 
 const CHART_COLORS = {
   efficiency: "#fb923c",
@@ -36,15 +38,6 @@ function average(values) {
   const clean = values.filter((v) => v !== null && v !== undefined && !Number.isNaN(v));
   if (clean.length === 0) return null;
   return clean.reduce((a, b) => a + b, 0) / clean.length;
-}
-
-/** Formats a Date's local calendar date as "YYYY-MM-DD" (toISOString would convert to UTC
- * first, silently shifting the date by a day whenever the local UTC offset is non-zero). */
-function toDateStr(d) {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
 }
 
 function periodKey(entryDate, period) {
@@ -213,7 +206,25 @@ function xAxisTicksOptions(labels, period) {
 
 export function initDashboardView(container) {
   container.innerHTML = `
+    <div id="dashboard-body">
     <div class="card">
+      <p id="dash-loading" class="hint">Loading your sleep data…</p>
+      <p id="dash-error" class="error-message" aria-live="polite" hidden></p>
+      <label>Date range</label>
+      <div class="field-row">
+        <div>
+          <label for="dash-range-from">From</label>
+          <input id="dash-range-from" type="date" />
+        </div>
+        <div>
+          <label for="dash-range-to">To</label>
+          <input id="dash-range-to" type="date" />
+        </div>
+      </div>
+      <div class="toggle-group" id="dash-range-shortcuts">
+        <button type="button" id="dash-range-all">All time</button>
+      </div>
+
       <label for="tag-filter">Filter by tag</label>
       <select id="tag-filter">
         <option value="">All entries</option>
@@ -234,6 +245,8 @@ export function initDashboardView(container) {
         </div>
       </div>
     </div>
+
+    <p id="dash-filtered-empty" class="hint" hidden>No entries in the selected range.</p>
 
     <div class="charts-grid">
       <div class="card">
@@ -310,9 +323,18 @@ export function initDashboardView(container) {
         <div class="chart-wrap"><canvas id="location-breakdown-chart"></canvas></div>
       </div>
     </div>
+    </div>
   `;
 
-  const tagFilter = container.querySelector("#tag-filter");
+  const loadingEl = container.querySelector("#dash-loading");
+  const errorEl = container.querySelector("#dash-error");
+  const dashboardBodyEl = container.querySelector("#dashboard-body");
+  const filteredEmptyEl = container.querySelector("#dash-filtered-empty");
+  const chartsGridEl = container.querySelector(".charts-grid");
+  const fromInput = container.querySelector("#dash-range-from");
+  const toInput = container.querySelector("#dash-range-to");
+  const allTimeBtn = container.querySelector("#dash-range-all");
+  const tagFilterSelect = container.querySelector("#tag-filter");
   const efficiencyToggle = container.querySelector("#efficiency-period-toggle");
   const efficiencyCanvas = container.querySelector("#efficiency-chart");
   const durationToggle = container.querySelector("#duration-period-toggle");
@@ -346,10 +368,20 @@ export function initDashboardView(container) {
   let tagBreakdownChart = null;
   let locationBreakdownChart = null;
 
+  function dateFilteredRows() {
+    const from = fromInput.value || null;
+    const to = toInput.value || null;
+    return rows.filter((r) => (!from || r.entry_date >= from) && (!to || r.entry_date <= to));
+  }
+
+  function tagFilter(rowsIn) {
+    if (!tagFilterSelect.value) return rowsIn;
+    if (tagFilterSelect.value === "__none__") return rowsIn.filter((r) => !r.tag);
+    return rowsIn.filter((r) => r.tag === tagFilterSelect.value);
+  }
+
   function filteredRows() {
-    if (!tagFilter.value) return rows;
-    if (tagFilter.value === "__none__") return rows.filter((r) => !r.tag);
-    return rows.filter((r) => r.tag === tagFilter.value);
+    return tagFilter(dateFilteredRows());
   }
 
   function renderSummary(rowsForSummary) {
@@ -921,8 +953,13 @@ export function initDashboardView(container) {
   }
 
   function renderAll() {
+    if (rows.length === 0) return;
     const filtered = filteredRows();
+    const filteredEmpty = filtered.length === 0;
+    filteredEmptyEl.hidden = !filteredEmpty;
+    chartsGridEl.hidden = filteredEmpty;
     renderSummary(filtered);
+    if (filteredEmpty) return;
     renderEfficiencyChart(filtered);
     renderDurationChart(filtered);
     renderTimesChart(filtered);
@@ -931,8 +968,8 @@ export function initDashboardView(container) {
     renderBedTimeChart(filtered);
     renderTimingConsistencyChart(filtered);
     renderNapsChart(filtered);
-    renderTagBreakdownChart(rows);
-    renderLocationBreakdownChart(rows);
+    renderTagBreakdownChart(dateFilteredRows());
+    renderLocationBreakdownChart(dateFilteredRows());
     timeToSleepChart = renderMinutesDiffChart(
       timeToSleepChart,
       timeToSleepCanvas,
@@ -975,27 +1012,47 @@ export function initDashboardView(container) {
     renderConsistencyChart(filteredRows());
   });
 
-  tagFilter.addEventListener("change", renderAll);
+  tagFilterSelect.addEventListener("change", renderAll);
+
+  fromInput.value = addDays(mondayOf(toDateStr(new Date())), -21);
+  toInput.value = toDateStr(new Date());
+  fromInput.addEventListener("change", renderAll);
+  toInput.addEventListener("change", renderAll);
+
+  allTimeBtn.addEventListener("click", () => {
+    if (rows.length === 0) return;
+    fromInput.value = rows[0].entry_date;
+    toInput.value = rows[rows.length - 1].entry_date;
+    renderAll();
+  });
 
   window.addEventListener("goals-updated", () => renderAll());
 
   loadEntries();
 
   async function loadEntries() {
+    loadingEl.hidden = false;
     const { data, error } = await supabase
       .from("diary_entries")
       .select("*")
       .order("entry_date", { ascending: true });
+    loadingEl.hidden = true;
 
     if (error) {
-      container.insertAdjacentHTML(
-        "afterbegin",
-        `<p class="error-message" aria-live="polite">${error.message}</p>`,
-      );
+      errorEl.textContent = `${error.message} ${retryHint()}`;
+      errorEl.hidden = false;
       return;
     }
 
     rows = (data ?? []).map((row) => ({ ...row, metrics: computeMetrics(row) }));
+    if (rows.length === 0) {
+      dashboardBodyEl.innerHTML = `
+        <div class="card">
+          <p>No entries yet — add your first night in the Entry tab.</p>
+        </div>
+      `;
+      return;
+    }
     renderAll();
   }
 }
