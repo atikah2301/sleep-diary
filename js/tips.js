@@ -63,7 +63,6 @@ function renderSection(section) {
 
 export function initTipsView(container) {
   container.innerHTML = `
-    <p class="hint">General sleep hygiene tips. Not medical advice — if sleep problems persist, it's worth talking to a doctor.</p>
     ${SECTIONS.map(renderSection).join("")}
   `;
 }
