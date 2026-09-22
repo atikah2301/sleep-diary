@@ -638,6 +638,15 @@ table.data-table tbody tr:hover .sticky-col {
   background: var(--surface-raised);
 }
 
+.summary-row td {
+  font-weight: 600;
+  background: var(--surface-raised);
+}
+
+tr.summary-row .sticky-col {
+  background: var(--surface-raised);
+}
+
 table.data-table th[data-sort] {
   cursor: pointer;
   white-space: nowrap;
@@ -694,6 +703,10 @@ table.data-table tbody tr:hover {
   table.export-preview td {
     border: 1px solid #999;
     color: #000;
+  }
+
+  .summary-row td {
+    background: #eee;
   }
 
   .table-scroll {

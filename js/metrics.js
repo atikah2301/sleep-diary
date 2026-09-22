@@ -35,3 +35,40 @@ export function computeMetrics(entry) {
     sleepEfficiencyPct,
   };
 }
+
+function avg(values) {
+  const clean = values.filter((v) => v !== null && v !== undefined && !Number.isNaN(v));
+  if (clean.length === 0) return null;
+  return clean.reduce((a, b) => a + b, 0) / clean.length;
+}
+
+/**
+ * Computes a weekly summary row matching the paper diary's convention: sleep efficiency
+ * is the ratio of the week's average total sleep time to its average time in bed (not an
+ * average of nightly efficiency percentages).
+ *
+ * @param {Array<{metrics: object, awakenings_count?: number, awake_minutes?: number, nap_count?: number, nap_minutes?: number}>} nights
+ */
+export function computeWeekSummary(nights) {
+  const real = nights.filter((n) => n.metrics?.timeInBedMinutes !== undefined);
+  if (real.length === 0) return null;
+
+  const avgTimeInBed = avg(real.map((n) => n.metrics.timeInBedMinutes));
+  const avgTotalSleepTime = avg(real.map((n) => n.metrics.totalSleepTimeMinutes));
+
+  return {
+    nightsCount: real.length,
+    metrics: {
+      timeInBedMinutes: avgTimeInBed,
+      totalSleepTimeMinutes: avgTotalSleepTime,
+      sleepEfficiencyPct:
+        avgTimeInBed > 0 ? (avgTotalSleepTime / avgTimeInBed) * 100 : null,
+      sleepOnsetLatencyMinutes: avg(real.map((n) => n.metrics.sleepOnsetLatencyMinutes)),
+      awakeAfterWakingMinutes: avg(real.map((n) => n.metrics.awakeAfterWakingMinutes)),
+    },
+    awakenings_count: avg(real.map((n) => n.awakenings_count)),
+    awake_minutes: avg(real.map((n) => n.awake_minutes)),
+    nap_count: avg(real.map((n) => n.nap_count)),
+    nap_minutes: avg(real.map((n) => n.nap_minutes)),
+  };
+}

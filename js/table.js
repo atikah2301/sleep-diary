@@ -1,6 +1,7 @@
 import { supabase } from "./supabase-client.js";
-import { computeMetrics } from "./metrics.js";
+import { computeMetrics, computeWeekSummary } from "./metrics.js";
 import { addTopScrollbar } from "./table-scroll-sync.js";
+import { toDateStr, mondayOf, addDays, formatWeekHeading } from "./date.js";
 
 const COLUMNS = [
   { key: "entry_date", label: "Date" },
@@ -25,7 +26,6 @@ const COLUMNS = [
   { key: "notes", label: "Notes" },
 ];
 
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 function dayOfWeekAbbr(dateStr) {
@@ -37,36 +37,6 @@ function formatHoursMinutes(mins) {
   const sign = mins < 0 ? "-" : "";
   const abs = Math.abs(mins);
   return `${sign}${Math.floor(abs / 60)}h ${abs % 60}`;
-}
-
-/** Formats a Date's local calendar date as "YYYY-MM-DD" (toISOString would convert to UTC
- * first, silently shifting the date by a day whenever the local UTC offset is non-zero). */
-function toDateStr(d) {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
-
-/** Monday (as "YYYY-MM-DD") of the week containing the given date string. */
-function mondayOf(dateStr) {
-  const d = new Date(`${dateStr}T00:00:00`);
-  const day = d.getDay();
-  const diffToMonday = day === 0 ? -6 : 1 - day;
-  d.setDate(d.getDate() + diffToMonday);
-  return toDateStr(d);
-}
-
-function addDays(dateStr, n) {
-  const d = new Date(`${dateStr}T00:00:00`);
-  d.setDate(d.getDate() + n);
-  return toDateStr(d);
-}
-
-function formatWeekHeading(dateStr) {
-  const d = new Date(`${dateStr}T00:00:00`);
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${day}-${MONTHS[d.getMonth()]}-${d.getFullYear()}`;
 }
 
 function formatValue(row, key) {
@@ -101,6 +71,41 @@ function formatValue(row, key) {
     default:
       return row[key] ?? "";
   }
+}
+
+function formatSummaryRow(summary, weekStart, columns) {
+  const cells = columns.map((c) => {
+    switch (c.key) {
+      case "entry_date":
+        return `Week of ${formatWeekHeading(weekStart)} (${summary.nightsCount} nights)`;
+      case "timeToSleep":
+        return summary.metrics.sleepOnsetLatencyMinutes?.toFixed(1) ?? "";
+      case "timeToRise":
+        return summary.metrics.awakeAfterWakingMinutes?.toFixed(1) ?? "";
+      case "timeInBedMinutes":
+        return summary.metrics.timeInBedMinutes?.toFixed(1) ?? "";
+      case "totalSleepTimeMinutes":
+        return summary.metrics.totalSleepTimeMinutes?.toFixed(1) ?? "";
+      case "timeInBedHm":
+        return formatHoursMinutes(Math.round(summary.metrics.timeInBedMinutes));
+      case "totalSleepTimeHm":
+        return formatHoursMinutes(Math.round(summary.metrics.totalSleepTimeMinutes));
+      case "sleepEfficiencyPct":
+        return summary.metrics.sleepEfficiencyPct === null
+          ? ""
+          : `${summary.metrics.sleepEfficiencyPct.toFixed(1)}%`;
+      case "awakenings_count":
+      case "awake_minutes":
+      case "nap_count":
+      case "nap_minutes":
+        return summary[c.key]?.toFixed(1) ?? "";
+      default:
+        return "";
+    }
+  });
+  return `<tr class="summary-row">${columns
+    .map((c, i) => `<td class="${stickyClass(c.key)}">${cells[i]}</td>`)
+    .join("")}</tr>`;
 }
 
 function sortValue(row, key) {
@@ -159,6 +164,7 @@ export function initTableView(container) {
         <label class="checkbox-label"><input type="checkbox" id="table-toggle-conversions" /> Show conversions</label>
         <label class="checkbox-label"><input type="checkbox" id="table-toggle-time-to-sleep" /> Show time to sleep</label>
         <label class="checkbox-label"><input type="checkbox" id="table-toggle-time-to-rise" /> Show time to rise</label>
+        <label class="checkbox-label"><input type="checkbox" id="table-toggle-weekly-summary" /> Show weekly totals/averages</label>
       </div>
       <p id="table-error" class="error-message" hidden></p>
       <div class="table-scroll">
@@ -177,6 +183,7 @@ export function initTableView(container) {
   const conversionsToggle = container.querySelector("#table-toggle-conversions");
   const timeToSleepToggle = container.querySelector("#table-toggle-time-to-sleep");
   const timeToRiseToggle = container.querySelector("#table-toggle-time-to-rise");
+  const weeklySummaryToggle = container.querySelector("#table-toggle-weekly-summary");
 
   addTopScrollbar(container.querySelector(".table-scroll"), tableEl);
 
@@ -237,7 +244,13 @@ export function initTableView(container) {
       )
       .join("");
 
-    tableEl.innerHTML = head + body;
+    let summaryRow = "";
+    if (weeklySummaryToggle.checked) {
+      const summary = computeWeekSummary(rowsForWeek());
+      if (summary) summaryRow = formatSummaryRow(summary, weekStart, columns);
+    }
+
+    tableEl.innerHTML = head + body + summaryRow;
   }
 
   prevBtn.addEventListener("click", () => {
@@ -255,7 +268,7 @@ export function initTableView(container) {
     render();
   });
 
-  [dayToggle, conversionsToggle, timeToSleepToggle, timeToRiseToggle].forEach((el) =>
+  [dayToggle, conversionsToggle, timeToSleepToggle, timeToRiseToggle, weeklySummaryToggle].forEach((el) =>
     el.addEventListener("change", render),
   );
 

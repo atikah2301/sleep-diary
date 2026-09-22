@@ -1,6 +1,7 @@
 import { supabase } from "./supabase-client.js";
-import { computeMetrics } from "./metrics.js";
+import { computeMetrics, computeWeekSummary } from "./metrics.js";
 import { addTopScrollbar } from "./table-scroll-sync.js";
+import { groupByWeek, formatWeekHeading } from "./date.js";
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -38,32 +39,75 @@ const COLUMNS = [
   { key: "sleepEfficiencyPct", label: "Sleep efficiency %" },
 ];
 
+function attachMetrics(entries) {
+  return entries.map((entry) => ({ ...entry, metrics: computeMetrics(entry) }));
+}
+
+function formatRow(entry) {
+  const metrics = entry.metrics;
+  return {
+    entry_date: entry.entry_date,
+    dayOfWeek: dayOfWeekAbbr(entry.entry_date),
+    bed_time: entry.bed_time?.slice(0, 5) ?? "",
+    sleep_time: entry.sleep_time?.slice(0, 5) ?? "",
+    timeToSleep: metrics.sleepOnsetLatencyMinutes ?? "",
+    awakenings_count: entry.awakenings_count ?? 0,
+    awake_minutes: entry.awake_minutes ?? 0,
+    wake_time: entry.wake_time?.slice(0, 5) ?? "",
+    rising_time: entry.rising_time?.slice(0, 5) ?? "",
+    timeToRise: metrics.awakeAfterWakingMinutes ?? "",
+    tag: entry.tag ?? "",
+    sleep_location: entry.sleep_location ?? "",
+    nap_count: entry.nap_count ?? 0,
+    nap_minutes: entry.nap_minutes ?? 0,
+    notes: entry.notes ?? "",
+    timeInBedMinutes: metrics.timeInBedMinutes ?? "",
+    timeInBedHm: formatHoursMinutes(metrics.timeInBedMinutes),
+    totalSleepTimeMinutes: metrics.totalSleepTimeMinutes ?? "",
+    totalSleepTimeHm: formatHoursMinutes(metrics.totalSleepTimeMinutes),
+    sleepEfficiencyPct:
+      metrics.sleepEfficiencyPct === null ? "" : Number(metrics.sleepEfficiencyPct.toFixed(1)),
+  };
+}
+
 function buildRows(entries) {
-  return entries.map((entry) => {
-    const metrics = computeMetrics(entry);
-    return {
-      entry_date: entry.entry_date,
-      dayOfWeek: dayOfWeekAbbr(entry.entry_date),
-      bed_time: entry.bed_time?.slice(0, 5) ?? "",
-      sleep_time: entry.sleep_time?.slice(0, 5) ?? "",
-      timeToSleep: metrics.sleepOnsetLatencyMinutes ?? "",
-      awakenings_count: entry.awakenings_count ?? 0,
-      awake_minutes: entry.awake_minutes ?? 0,
-      wake_time: entry.wake_time?.slice(0, 5) ?? "",
-      rising_time: entry.rising_time?.slice(0, 5) ?? "",
-      timeToRise: metrics.awakeAfterWakingMinutes ?? "",
-      tag: entry.tag ?? "",
-      sleep_location: entry.sleep_location ?? "",
-      nap_count: entry.nap_count ?? 0,
-      nap_minutes: entry.nap_minutes ?? 0,
-      notes: entry.notes ?? "",
-      timeInBedMinutes: metrics.timeInBedMinutes ?? "",
-      timeInBedHm: formatHoursMinutes(metrics.timeInBedMinutes),
-      totalSleepTimeMinutes: metrics.totalSleepTimeMinutes ?? "",
-      totalSleepTimeHm: formatHoursMinutes(metrics.totalSleepTimeMinutes),
-      sleepEfficiencyPct:
-        metrics.sleepEfficiencyPct === null ? "" : Number(metrics.sleepEfficiencyPct.toFixed(1)),
-    };
+  return attachMetrics(entries).map(formatRow);
+}
+
+function formatSummaryRow(summary, weekStart) {
+  return {
+    entry_date: `Week of ${formatWeekHeading(weekStart)} (${summary.nightsCount} nights)`,
+    dayOfWeek: "",
+    bed_time: "",
+    sleep_time: "",
+    timeToSleep: summary.metrics.sleepOnsetLatencyMinutes?.toFixed(1) ?? "",
+    awakenings_count: summary.awakenings_count?.toFixed(1) ?? "",
+    awake_minutes: summary.awake_minutes?.toFixed(1) ?? "",
+    wake_time: "",
+    rising_time: "",
+    timeToRise: summary.metrics.awakeAfterWakingMinutes?.toFixed(1) ?? "",
+    tag: "",
+    sleep_location: "",
+    nap_count: summary.nap_count?.toFixed(1) ?? "",
+    nap_minutes: summary.nap_minutes?.toFixed(1) ?? "",
+    notes: "",
+    timeInBedMinutes: summary.metrics.timeInBedMinutes?.toFixed(1) ?? "",
+    timeInBedHm: formatHoursMinutes(Math.round(summary.metrics.timeInBedMinutes)),
+    totalSleepTimeMinutes: summary.metrics.totalSleepTimeMinutes?.toFixed(1) ?? "",
+    totalSleepTimeHm: formatHoursMinutes(Math.round(summary.metrics.totalSleepTimeMinutes)),
+    sleepEfficiencyPct:
+      summary.metrics.sleepEfficiencyPct === null ? "" : `${summary.metrics.sleepEfficiencyPct.toFixed(1)}%`,
+    isSummaryRow: true,
+  };
+}
+
+function withWeeklySummaries(entries) {
+  const withMetrics = attachMetrics(entries);
+  const weeks = groupByWeek(withMetrics);
+  return weeks.flatMap(({ weekStart, rows }) => {
+    const formatted = rows.map(formatRow);
+    const summary = computeWeekSummary(rows);
+    return summary ? [...formatted, formatSummaryRow(summary, weekStart)] : formatted;
   });
 }
 
@@ -96,7 +140,9 @@ function renderPreviewTable(container, rows, columns) {
   const body = rows
     .map(
       (row) =>
-        `<tr>${columns.map((c) => `<td class="${stickyClass(c.key)}">${row[c.key] ?? ""}</td>`).join("")}</tr>`,
+        `<tr class="${row.isSummaryRow ? "summary-row" : ""}">${columns
+          .map((c) => `<td class="${stickyClass(c.key)}">${row[c.key] ?? ""}</td>`)
+          .join("")}</tr>`,
     )
     .join("");
   table.innerHTML = head + body;
@@ -127,6 +173,7 @@ export function initExportView(container) {
           <label class="checkbox-label"><input type="checkbox" id="toggle-conversions" /> Show conversions</label>
           <label class="checkbox-label"><input type="checkbox" id="toggle-time-to-sleep" /> Show time to sleep</label>
           <label class="checkbox-label"><input type="checkbox" id="toggle-time-to-rise" /> Show time to rise</label>
+          <label class="checkbox-label"><input type="checkbox" id="toggle-weekly-summary" /> Show weekly totals/averages</label>
         </div>
         <div class="export-buttons">
           <button type="button" id="export-excel" class="primary">Download Excel (.xlsx)</button>
@@ -149,10 +196,11 @@ export function initExportView(container) {
   const conversionsToggle = container.querySelector("#toggle-conversions");
   const timeToSleepToggle = container.querySelector("#toggle-time-to-sleep");
   const timeToRiseToggle = container.querySelector("#toggle-time-to-rise");
+  const weeklySummaryToggle = container.querySelector("#toggle-weekly-summary");
 
   addTopScrollbar(container.querySelector(".table-scroll"), container.querySelector("#export-preview-table"));
 
-  let allRows = [];
+  let allEntries = [];
 
   function activeColumns() {
     return COLUMNS.filter((c) => {
@@ -164,43 +212,48 @@ export function initExportView(container) {
     });
   }
 
-  function filteredRows() {
+  function filteredEntries() {
     const from = fromInput.value || null;
     const to = toInput.value || null;
-    if (!from && !to) return allRows;
+    if (!from && !to) return allEntries;
 
-    return allRows.filter((row) => {
-      if (from && row.entry_date < from) return false;
-      if (to && row.entry_date > to) return false;
+    return allEntries.filter((entry) => {
+      if (from && entry.entry_date < from) return false;
+      if (to && entry.entry_date > to) return false;
       return true;
     });
   }
 
+  function displayRows() {
+    const entries = filteredEntries();
+    return weeklySummaryToggle.checked ? withWeeklySummaries(entries) : buildRows(entries);
+  }
+
   function rangeSuffix() {
     if (!fromInput.value && !toInput.value) return "all";
-    const rows = filteredRows();
-    if (rows.length === 0) return "no-entries";
-    return `${rows[0].entry_date}_to_${rows[rows.length - 1].entry_date}`;
+    const entries = filteredEntries();
+    if (entries.length === 0) return "no-entries";
+    return `${entries[0].entry_date}_to_${entries[entries.length - 1].entry_date}`;
   }
 
   function refresh() {
-    const rows = filteredRows();
-    renderPreviewTable(container, rows, activeColumns());
-    if (rows.length === allRows.length) {
-      summaryEl.textContent = `Showing all entries (${rows.length}).`;
-    } else if (rows.length === 0) {
+    const entries = filteredEntries();
+    renderPreviewTable(container, displayRows(), activeColumns());
+    if (entries.length === allEntries.length) {
+      summaryEl.textContent = `Showing all entries (${entries.length}).`;
+    } else if (entries.length === 0) {
       summaryEl.textContent = "Showing 0 entries in the selected range.";
     } else {
-      const first = rows[0].entry_date;
-      const last = rows[rows.length - 1].entry_date;
-      summaryEl.textContent = `Showing ${rows.length} entries, ${first} to ${last}.`;
+      const first = entries[0].entry_date;
+      const last = entries[entries.length - 1].entry_date;
+      summaryEl.textContent = `Showing ${entries.length} entries, ${first} to ${last}.`;
     }
   }
 
   container.querySelector("#range-all").addEventListener("click", () => {
-    if (allRows.length === 0) return;
-    fromInput.value = allRows[0].entry_date;
-    toInput.value = allRows[allRows.length - 1].entry_date;
+    if (allEntries.length === 0) return;
+    fromInput.value = allEntries[0].entry_date;
+    toInput.value = allEntries[allEntries.length - 1].entry_date;
     refresh();
   });
 
@@ -213,12 +266,12 @@ export function initExportView(container) {
   fromInput.addEventListener("change", refresh);
   toInput.addEventListener("change", refresh);
 
-  [dayToggle, conversionsToggle, timeToSleepToggle, timeToRiseToggle].forEach((el) =>
+  [dayToggle, conversionsToggle, timeToSleepToggle, timeToRiseToggle, weeklySummaryToggle].forEach((el) =>
     el.addEventListener("change", refresh),
   );
 
   container.querySelector("#export-excel").addEventListener("click", () => {
-    const rows = filteredRows();
+    const rows = displayRows();
     if (rows.length === 0) return;
     downloadExcel(rows, rangeSuffix(), activeColumns());
   });
@@ -238,7 +291,7 @@ export function initExportView(container) {
       errorEl.hidden = false;
       return;
     }
-    allRows = buildRows(data ?? []);
+    allEntries = data ?? [];
     refresh();
   }
 
