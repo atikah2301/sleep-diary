@@ -97,8 +97,11 @@ export function initEntryView(container) {
       <div class="entry-date-nav">
         <button type="button" id="entry-date-prev" aria-label="Previous day">◀</button>
         <div>
-          <label for="entry-date">For the night of... <span id="entry-date-weekday"></span></label>
-          <input id="entry-date" type="date" required />
+          <label for="entry-date">For the night of...</label>
+          <div class="entry-date-field">
+            <span id="entry-date-weekday" class="entry-date-weekday"></span>
+            <input id="entry-date" type="date" required />
+          </div>
         </div>
         <button type="button" id="entry-date-next" aria-label="Next day">▶</button>
       </div>

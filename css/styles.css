@@ -343,6 +343,29 @@ input[type="time"] {
   gap: 8px;
 }
 
+.entry-date-field {
+  display: flex;
+  margin-bottom: 16px;
+}
+
+.entry-date-weekday {
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-right: none;
+  border-radius: 8px 0 0 8px;
+  background: var(--surface-raised);
+  color: var(--text-dim);
+  font-size: 1rem;
+  white-space: nowrap;
+}
+
+.entry-date-field input[type="date"] {
+  border-radius: 0 8px 8px 0;
+  margin-bottom: 0;
+}
+
 .entry-date-nav > div {
   flex: 1;
 }
