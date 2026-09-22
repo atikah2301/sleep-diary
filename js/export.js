@@ -205,7 +205,7 @@ export function initExportView(container) {
         </div>
         <div class="export-buttons">
           <button type="button" id="export-excel" class="primary">Download Excel (.xlsx)</button>
-          <button type="button" id="export-pdf" class="secondary">Print / Save as PDF</button>
+          <button type="button" id="export-pdf" class="primary">Print / Save as PDF</button>
         </div>
       </div>
       <p id="export-error" class="error-message" hidden></p>
