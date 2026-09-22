@@ -144,15 +144,19 @@ function stickyClass(key) {
   return "";
 }
 
+function cellClass(key) {
+  return `${stickyClass(key)} ${key === "notes" ? "col-notes" : ""}`.trim();
+}
+
 function renderWeekTable(group, columns) {
   const head = `<thead><tr>${columns
-    .map((c) => `<th class="${stickyClass(c.key)}">${c.label}</th>`)
+    .map((c) => `<th class="${cellClass(c.key)}">${c.label}</th>`)
     .join("")}</tr></thead>`;
   const body = group.rows
     .map(
       (row) =>
         `<tr class="${row.isSummaryRow ? "summary-row" : ""}">${columns
-          .map((c) => `<td class="${stickyClass(c.key)}">${row[c.key] ?? ""}</td>`)
+          .map((c) => `<td class="${cellClass(c.key)}">${row[c.key] ?? ""}</td>`)
           .join("")}</tr>`,
     )
     .join("");
