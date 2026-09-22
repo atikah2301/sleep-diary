@@ -701,6 +701,7 @@ table.data-table tbody tr:hover {
 
 @page {
   size: landscape;
+  margin: 8mm;
 }
 
 @media print {
@@ -715,10 +716,22 @@ table.data-table tbody tr:hover {
     color: #000;
   }
 
+  table.export-preview {
+    font-size: 0.6rem;
+  }
+
   table.export-preview th,
   table.export-preview td {
     border: 1px solid #999;
     color: #000;
+    padding: 3px 4px;
+    word-break: break-word;
+  }
+
+  .sticky-col-1,
+  .sticky-col-2 {
+    width: auto;
+    min-width: 0;
   }
 
   .summary-row td {
