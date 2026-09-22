@@ -24,6 +24,15 @@ function formatDateLabel(dateStr) {
   return d.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
 }
 
+function formatWeekdayDate(dateStr) {
+  const d = new Date(`${dateStr}T00:00:00`);
+  const weekday = d.toLocaleDateString(undefined, { weekday: "short" });
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const year = String(d.getFullYear()).slice(-2);
+  return `${weekday} ${day}/${month}/${year}`;
+}
+
 function addDaysToISODate(dateStr, n) {
   const d = new Date(`${dateStr}T00:00:00`);
   d.setDate(d.getDate() + n);
@@ -88,7 +97,7 @@ export function initEntryView(container) {
       <div class="entry-date-nav">
         <button type="button" id="entry-date-prev" aria-label="Previous day">◀</button>
         <div>
-          <label for="entry-date">For the night of...</label>
+          <label for="entry-date">For the night of... <span id="entry-date-weekday"></span></label>
           <input id="entry-date" type="date" required />
         </div>
         <button type="button" id="entry-date-next" aria-label="Next day">▶</button>
@@ -179,6 +188,7 @@ export function initEntryView(container) {
   `;
 
   const dateInput = container.querySelector("#entry-date");
+  const dateWeekdayEl = container.querySelector("#entry-date-weekday");
   const bedTimeInput = container.querySelector("#bed-time");
   const sleepModeToggle = container.querySelector("#sleep-mode-toggle");
   const sleepTimeInput = container.querySelector("#sleep-time-input");
@@ -430,6 +440,7 @@ export function initEntryView(container) {
     }
     navBlockedMsgEl.hidden = true;
     dateInput.value = newDate;
+    dateWeekdayEl.textContent = formatWeekdayDate(newDate);
     loadedDate = newDate;
     showingCancelFeedback = false;
     clearTimeout(cancelFeedbackTimer);
@@ -531,6 +542,7 @@ export function initEntryView(container) {
   });
 
   dateInput.value = yesterdayISO();
+  dateWeekdayEl.textContent = formatWeekdayDate(dateInput.value);
   loadedDate = dateInput.value;
   loadEntryForDate(dateInput.value);
 }
