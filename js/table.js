@@ -167,7 +167,7 @@ export function initTableView(container) {
         <label class="checkbox-label"><input type="checkbox" id="table-toggle-naps" /> Show naps</label>
         <label class="checkbox-label"><input type="checkbox" id="table-toggle-weekly-summary" checked /> Show weekly averages</label>
       </div>
-      <p id="table-error" class="error-message" hidden></p>
+      <p id="table-error" class="error-message" aria-live="polite" hidden></p>
       <div class="table-scroll">
         <table class="export-preview data-table" id="diary-table"></table>
       </div>

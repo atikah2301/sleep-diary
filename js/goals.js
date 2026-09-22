@@ -68,11 +68,11 @@ export function initGoalsView(container) {
       <input id="goal-min-wake-time" type="time" />
       <label for="goal-max-wake-time">Latest wake time goal</label>
       <input id="goal-max-wake-time" type="time" />
-      <p id="goal-wake-time-error" class="error-message" hidden></p>
+      <p id="goal-wake-time-error" class="error-message" aria-live="polite" hidden></p>
       <p class="hint" id="goal-bed-time-derived"></p>
 
       <button type="button" class="primary" id="goals-save">Save goals</button>
-      <p id="goals-saved-msg" class="form-feedback" hidden>Saved.</p>
+      <p id="goals-saved-msg" class="form-feedback" aria-live="polite" hidden>Saved.</p>
     </div>
   `;
 

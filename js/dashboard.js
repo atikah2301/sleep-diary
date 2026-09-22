@@ -990,7 +990,7 @@ export function initDashboardView(container) {
     if (error) {
       container.insertAdjacentHTML(
         "afterbegin",
-        `<p class="error-message">${error.message}</p>`,
+        `<p class="error-message" aria-live="polite">${error.message}</p>`,
       );
       return;
     }

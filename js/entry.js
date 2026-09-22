@@ -88,7 +88,7 @@ export function initEntryView(container) {
     <div id="entry-mode-banner" class="mode-banner" hidden>
       <p class="mode-banner-text">Editing entry for <strong id="entry-mode-date"></strong></p>
       <button type="button" id="entry-mode-cancel" class="mode-banner-cancel">Cancel edit</button>
-      <p id="entry-mode-cancel-feedback" class="mode-banner-feedback" hidden>Entry left unchanged.</p>
+      <p id="entry-mode-cancel-feedback" class="mode-banner-feedback" aria-live="polite" hidden>Entry left unchanged.</p>
     </div>
 
     <form id="entry-form" class="card">
@@ -108,7 +108,7 @@ export function initEntryView(container) {
         <button type="button" id="entry-clear-inputs" class="secondary">Clear inputs</button>
         <button type="button" id="entry-show-in-table" class="secondary" hidden>Show in Table</button>
       </div>
-      <p id="entry-nav-blocked-msg" class="error-message" hidden>
+      <p id="entry-nav-blocked-msg" class="error-message" aria-live="polite" hidden>
         You have unsaved changes for this entry. Save or complete it before navigating to another entry.
       </p>
 
@@ -126,11 +126,11 @@ export function initEntryView(container) {
 
       <label for="awakenings-count">I woke up ? times in the night...</label>
       <input id="awakenings-count" type="number" min="0" step="1" value="0" />
-      <p id="awakenings-error" class="error-message" hidden></p>
+      <p id="awakenings-error" class="error-message" aria-live="polite" hidden></p>
 
       <label for="awake-minutes">I was awake in the night for ? minutes...</label>
       <input id="awake-minutes" type="number" min="0" step="1" value="0" />
-      <p id="awake-minutes-error" class="error-message" hidden></p>
+      <p id="awake-minutes-error" class="error-message" aria-live="polite" hidden></p>
 
       <label for="wake-time">My final wake time was...</label>
       <input id="wake-time" type="time" required />
@@ -156,19 +156,19 @@ export function initEntryView(container) {
 
       <label for="nap-count">Before bed time, I took ? naps...</label>
       <input id="nap-count" type="number" min="0" step="1" value="0" />
-      <p id="nap-count-error" class="error-message" hidden></p>
+      <p id="nap-count-error" class="error-message" aria-live="polite" hidden></p>
 
       <label for="nap-minutes">I napped for a total of ? minutes...</label>
       <input id="nap-minutes" type="number" min="0" step="1" value="0" />
-      <p id="nap-minutes-error" class="error-message" hidden></p>
+      <p id="nap-minutes-error" class="error-message" aria-live="polite" hidden></p>
 
       <label for="notes">Notes (optional)</label>
       <textarea id="notes" rows="2" maxlength="${NOTES_MAX_LENGTH}"></textarea>
       <p id="notes-char-count" class="char-counter">0 / ${NOTES_MAX_LENGTH}</p>
 
-      <p id="entry-error" class="error-message" hidden></p>
+      <p id="entry-error" class="error-message" aria-live="polite" hidden></p>
       <button type="submit" class="primary" id="entry-submit">Save entry</button>
-      <p id="entry-no-changes-msg" class="form-feedback" hidden>No changes to save.</p>
+      <p id="entry-no-changes-msg" class="form-feedback" aria-live="polite" hidden>No changes to save.</p>
     </form>
 
     <div id="entry-summary" class="card" hidden>

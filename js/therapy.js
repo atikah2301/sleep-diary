@@ -83,7 +83,7 @@ function editCardHtml(key) {
       </div>
       <label for="therapy-body">Notes (optional)</label>
       <textarea id="therapy-body" rows="4"></textarea>
-      <p class="error-message" hidden>Heading is required.</p>
+      <p class="error-message" aria-live="polite" hidden>Heading is required.</p>
       <div class="entry-button-row">
         <button type="button" class="secondary" data-action="cancel">Cancel</button>
         <button type="button" class="primary" data-action="save">Save</button>
@@ -101,7 +101,7 @@ export function initTherapyView(container) {
       <button type="button" id="therapy-export" class="secondary">Export notes</button>
     </div>
     <div id="therapy-list"></div>
-    <p id="therapy-error" class="error-message" hidden></p>
+    <p id="therapy-error" class="error-message" aria-live="polite" hidden></p>
   `;
 
   const listEl = container.querySelector("#therapy-list");

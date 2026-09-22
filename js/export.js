@@ -213,7 +213,7 @@ export function initExportView(container) {
         </div>
         <p class="hint" id="export-pdf-hint" style="margin: 8px 0 0"></p>
       </div>
-      <p id="export-error" class="error-message" hidden></p>
+      <p id="export-error" class="error-message" aria-live="polite" hidden></p>
       <p class="hint" id="export-range-summary" style="margin: 0 0 12px"></p>
       <div class="table-scroll">
         <div id="export-preview-table"></div>
