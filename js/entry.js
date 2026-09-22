@@ -29,7 +29,7 @@ function formatWeekday(dateStr) {
   return d.toLocaleDateString(undefined, { weekday: "short" });
 }
 
-const NOTES_MAX_LENGTH = 300;
+const NOTES_MAX_LENGTH = 100;
 
 function addDaysToISODate(dateStr, n) {
   const d = new Date(`${dateStr}T00:00:00`);
