@@ -332,7 +332,14 @@ export function initExportView(container) {
       },
       { once: true },
     );
-    window.print();
+    // Print immediately after a date-range change can catch Chrome mid-layout, before it has
+    // recomputed the @page print styles for the freshly-rendered table - a couple of rAF ticks
+    // let layout settle first so the landscape default from styles.css is read reliably.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        window.print();
+      });
+    });
   });
 
   async function loadRows() {
