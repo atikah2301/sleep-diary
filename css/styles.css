@@ -304,6 +304,17 @@ input[type="time"] {
   margin: -10px 0 16px;
 }
 
+#notes {
+  margin-bottom: 4px;
+}
+
+.char-counter {
+  margin: 4px 0 16px;
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  text-align: right;
+}
+
 .tips-section summary {
   cursor: pointer;
   font-size: 1.05rem;

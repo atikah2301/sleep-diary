@@ -29,6 +29,8 @@ function formatWeekday(dateStr) {
   return d.toLocaleDateString(undefined, { weekday: "short" });
 }
 
+const NOTES_MAX_LENGTH = 300;
+
 function addDaysToISODate(dateStr, n) {
   const d = new Date(`${dateStr}T00:00:00`);
   d.setDate(d.getDate() + n);
@@ -161,7 +163,8 @@ export function initEntryView(container) {
       <p id="nap-minutes-error" class="error-message" hidden></p>
 
       <label for="notes">Notes (optional)</label>
-      <textarea id="notes" rows="2"></textarea>
+      <textarea id="notes" rows="2" maxlength="${NOTES_MAX_LENGTH}"></textarea>
+      <p id="notes-char-count" class="char-counter">0 / ${NOTES_MAX_LENGTH}</p>
 
       <p id="entry-error" class="error-message" hidden></p>
       <button type="submit" class="primary" id="entry-submit">Save entry</button>
@@ -206,6 +209,7 @@ export function initEntryView(container) {
   const napMinutesInput = container.querySelector("#nap-minutes");
   const napMinutesErrorEl = container.querySelector("#nap-minutes-error");
   const notesInput = container.querySelector("#notes");
+  const notesCharCountEl = container.querySelector("#notes-char-count");
   const form = container.querySelector("#entry-form");
   const submitBtn = container.querySelector("#entry-submit");
   const errorEl = container.querySelector("#entry-error");
@@ -286,6 +290,8 @@ export function initEntryView(container) {
   }
 
   function updateEditingState() {
+    notesCharCountEl.textContent = `${notesInput.value.length} / ${NOTES_MAX_LENGTH}`;
+
     const hasExistingEntry = savedSnapshot !== null;
     isDirty = hasExistingEntry && JSON.stringify(snapshotFromForm()) !== JSON.stringify(savedSnapshot);
 
