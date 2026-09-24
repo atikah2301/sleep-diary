@@ -277,6 +277,12 @@ input[type="time"] {
   padding-right: 44px;
 }
 
+/* Hide browser's own icon if present */
+.password-field input::-ms-reveal,
+.password-field input::-ms-clear {
+  display: none;
+}
+
 .password-toggle {
   position: absolute;
   top: 0;
