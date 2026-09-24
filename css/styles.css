@@ -838,6 +838,7 @@ table.data-table tbody tr:hover {
     border: 1px solid #999;
     color: #000;
     padding: 3px 4px;
+    line-height: 1.2;
     word-break: break-word;
   }
 
