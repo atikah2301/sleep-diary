@@ -789,7 +789,9 @@ table.data-table tbody tr:hover {
 }
 
 @page {
-  size: landscape;
+  /* Explicit landscape dimensions, rather than the `landscape` keyword, are honoured more
+     reliably by mobile browsers' print/share-sheet pipelines. */
+  size: 297mm 210mm;
   margin: 8mm;
 }
 
@@ -800,9 +802,30 @@ table.data-table tbody tr:hover {
     display: none !important;
   }
 
+  html,
   body {
     background: #fff;
     color: #000;
+  }
+
+  /* #app's mobile-first max-width and the .card/.sticky-col dark theme backgrounds are
+     otherwise carried into print/PDF output, leaving mobile output narrow and dark even
+     though desktop print looks fine - desktop's print dialog defaults "background graphics"
+     off, masking the same underlying issue there. */
+  #app {
+    max-width: none;
+    margin: 0;
+  }
+
+  .card {
+    background: #fff;
+    border: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .sticky-col {
+    background: #fff;
   }
 
   table.export-preview {
@@ -842,7 +865,8 @@ table.data-table tbody tr:hover {
     color: #000;
   }
 
-  .summary-row td {
+  .summary-row td,
+  tr.summary-row .sticky-col {
     background: #eee;
   }
 
