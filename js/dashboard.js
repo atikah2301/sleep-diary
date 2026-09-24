@@ -20,6 +20,7 @@ const CHART_COLORS = {
   nap: "#c084fc",
   wake: "#22d3ee",
   bedtime: "#f472b6",
+  trend: "#a78bfa",
 };
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -396,6 +397,8 @@ export function initDashboardView(container) {
     const grouped = groupByPeriod(rowsForChart, efficiencyPeriod);
     const labels = grouped.map((g) => g.key);
     const { efficiencyGoalPct } = getGoals();
+    const efficiencyValues = grouped.map((g) => g.efficiency);
+    const trend = linearTrendDataset(efficiencyValues);
     if (efficiencyChart) efficiencyChart.destroy();
     efficiencyChart = new Chart(efficiencyCanvas, {
       type: "line",
@@ -404,7 +407,7 @@ export function initDashboardView(container) {
         datasets: [
           {
             label: "Sleep efficiency %",
-            data: grouped.map((g) => g.efficiency),
+            data: efficiencyValues,
             borderColor: CHART_COLORS.efficiency,
             backgroundColor: CHART_COLORS.efficiency,
             tension: 0.25,
@@ -420,6 +423,7 @@ export function initDashboardView(container) {
             tension: 0,
             fill: false,
           },
+          ...(trend ? [trend] : []),
         ],
       },
       options: {
@@ -450,6 +454,8 @@ export function initDashboardView(container) {
     const grouped = groupByPeriod(rowsForChart, durationPeriod);
     const labels = grouped.map((g) => g.key);
     const { durationGoalMinutes } = getGoals();
+    const durationValues = grouped.map((g) => g.totalSleepTimeMinutes);
+    const trend = linearTrendDataset(durationValues);
     if (durationChart) durationChart.destroy();
     durationChart = new Chart(durationCanvas, {
       type: "line",
@@ -458,7 +464,7 @@ export function initDashboardView(container) {
         datasets: [
           {
             label: "Sleep duration",
-            data: grouped.map((g) => g.totalSleepTimeMinutes),
+            data: durationValues,
             borderColor: CHART_COLORS.duration,
             backgroundColor: CHART_COLORS.duration,
             tension: 0.25,
@@ -474,6 +480,7 @@ export function initDashboardView(container) {
             tension: 0,
             fill: false,
           },
+          ...(trend ? [trend] : []),
         ],
       },
       options: {
@@ -687,6 +694,35 @@ export function initDashboardView(container) {
 
   /** A flat dashed reference-line dataset, matching the existing "Goal" line style used by
    * renderEfficiencyChart/renderDurationChart. */
+  /** Ordinary-least-squares fit over the index (not the date), so gaps between entries don't
+   * skew the slope - each point counts equally regardless of how many days it's spaced from
+   * its neighbours. Returns null when there are fewer than 2 real (non-null) points to fit. */
+  function linearTrendDataset(values) {
+    const points = values
+      .map((v, i) => ({ i, v }))
+      .filter((p) => p.v !== null && p.v !== undefined && !Number.isNaN(p.v));
+    if (points.length < 2) return null;
+    const n = points.length;
+    const sumX = points.reduce((s, p) => s + p.i, 0);
+    const sumY = points.reduce((s, p) => s + p.v, 0);
+    const sumXY = points.reduce((s, p) => s + p.i * p.v, 0);
+    const sumXX = points.reduce((s, p) => s + p.i * p.i, 0);
+    const denom = n * sumXX - sumX * sumX;
+    if (denom === 0) return null;
+    const slope = (n * sumXY - sumX * sumY) / denom;
+    const intercept = (sumY - slope * sumX) / n;
+    return {
+      label: "Trend",
+      data: values.map((_, i) => slope * i + intercept),
+      borderColor: CHART_COLORS.trend,
+      borderDash: [2, 3],
+      borderWidth: 2,
+      pointRadius: 0,
+      tension: 0,
+      fill: false,
+    };
+  }
+
   function goalLineDataset(label, minutesSinceNoonValue, labels) {
     return {
       label,
@@ -726,6 +762,8 @@ export function initDashboardView(container) {
     const sorted = [...rowsForChart].sort((a, b) => (a.entry_date < b.entry_date ? -1 : 1));
     const labels = sorted.map((r) => r.entry_date);
     const { minWakeTime, maxWakeTime } = getGoals();
+    const wakeValues = sorted.map((r) => minutesSinceNoon(r.wake_time.slice(0, 5)));
+    const trend = linearTrendDataset(wakeValues);
     if (wakeTimeChart) wakeTimeChart.destroy();
     wakeTimeChart = new Chart(wakeTimeCanvas, {
       type: "line",
@@ -734,7 +772,7 @@ export function initDashboardView(container) {
         datasets: [
           {
             label: "Wake time",
-            data: sorted.map((r) => minutesSinceNoon(r.wake_time.slice(0, 5))),
+            data: wakeValues,
             showLine: false,
             pointRadius: 4,
             pointBackgroundColor: CHART_COLORS.wake,
@@ -742,6 +780,7 @@ export function initDashboardView(container) {
           },
           goalLineDataset("Earliest goal", minutesSinceNoon(minWakeTime), labels),
           goalLineDataset("Latest goal", minutesSinceNoon(maxWakeTime), labels),
+          ...(trend ? [trend] : []),
         ],
       },
       options: clockChartOptions(labels),
@@ -752,6 +791,8 @@ export function initDashboardView(container) {
     const sorted = [...rowsForChart].sort((a, b) => (a.entry_date < b.entry_date ? -1 : 1));
     const labels = sorted.map((r) => r.entry_date);
     const { minBedTime, maxBedTime } = getBedTimeGoals(getGoals());
+    const bedValues = sorted.map((r) => minutesSinceNoon(r.bed_time.slice(0, 5)));
+    const trend = linearTrendDataset(bedValues);
     if (bedTimeChart) bedTimeChart.destroy();
     bedTimeChart = new Chart(bedTimeCanvas, {
       type: "line",
@@ -760,7 +801,7 @@ export function initDashboardView(container) {
         datasets: [
           {
             label: "Bed time",
-            data: sorted.map((r) => minutesSinceNoon(r.bed_time.slice(0, 5))),
+            data: bedValues,
             showLine: false,
             pointRadius: 4,
             pointBackgroundColor: CHART_COLORS.bedtime,
@@ -768,6 +809,7 @@ export function initDashboardView(container) {
           },
           goalLineDataset("Earliest goal", minutesSinceNoon(minBedTime), labels),
           goalLineDataset("Latest goal", minutesSinceNoon(maxBedTime), labels),
+          ...(trend ? [trend] : []),
         ],
       },
       options: clockChartOptions(labels),
