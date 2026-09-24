@@ -464,6 +464,31 @@ input[type="time"] {
   cursor: pointer;
 }
 
+.offline-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface-raised);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  color: var(--text);
+  font-size: 0.85rem;
+}
+
+.offline-hint {
+  color: var(--accent);
+  font-size: 0.85rem;
+  margin: -8px 0 12px;
+}
+
+button.primary:disabled,
+button.secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .mode-banner-feedback {
   margin: 0;
   color: var(--text-dim);

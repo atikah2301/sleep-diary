@@ -3,6 +3,7 @@ import { computeMetrics, computeWeekSummary } from "./metrics.js";
 import { addTopScrollbar } from "./table-scroll-sync.js";
 import { groupByWeek, formatWeekHeading } from "./date.js";
 import { isMobileDevice, retryHint } from "./device.js";
+import { fetchWithOfflineFallback } from "./offline-cache.js";
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -340,10 +341,9 @@ export function initExportView(container) {
   });
 
   async function loadRows() {
-    const { data, error } = await supabase
-      .from("diary_entries")
-      .select("*")
-      .order("entry_date", { ascending: true });
+    const { data, error } = await fetchWithOfflineFallback("diary_entries", () =>
+      supabase.from("diary_entries").select("*").order("entry_date", { ascending: true }),
+    );
 
     if (error) {
       errorEl.textContent = `${error.message} ${retryHint()}`;

@@ -1,4 +1,6 @@
 import { supabase } from "./supabase-client.js";
+import { isOnline, onConnectivityChange } from "./device.js";
+import { fetchWithOfflineFallback } from "./offline-cache.js";
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -84,6 +86,7 @@ function editCardHtml(key) {
       <label for="therapy-body">Notes (optional)</label>
       <textarea id="therapy-body" rows="4"></textarea>
       <p class="error-message" aria-live="polite" hidden>Heading is required.</p>
+      <p class="offline-hint" hidden>You're offline — reconnect to save.</p>
       <div class="entry-button-row">
         <button type="button" class="secondary" data-action="cancel">Cancel</button>
         <button type="button" class="primary" data-action="save">Save</button>
@@ -137,11 +140,20 @@ export function initTherapyView(container) {
     const timeInput = card.querySelector("#therapy-time");
     const bodyInput = card.querySelector("#therapy-body");
     const cardErrorEl = card.querySelector(".error-message");
+    const cardOfflineMsgEl = card.querySelector(".offline-hint");
+    const cardSaveBtn = card.querySelector('[data-action="save"]');
 
     headingInput.value = source.heading ?? "";
     dateInput.value = source.session_date ?? "";
     timeInput.value = source.session_time ? source.session_time.slice(0, 5) : "";
     bodyInput.value = source.body ?? "";
+
+    function applyOfflineState() {
+      cardSaveBtn.disabled = !isOnline();
+      cardOfflineMsgEl.hidden = isOnline();
+    }
+    applyOfflineState();
+    onConnectivityChange(applyOfflineState);
 
     card.querySelector('[data-action="cancel"]').addEventListener("click", () => {
       editingId = null;
@@ -149,7 +161,12 @@ export function initTherapyView(container) {
       render();
     });
 
-    card.querySelector('[data-action="save"]').addEventListener("click", async () => {
+    cardSaveBtn.addEventListener("click", async () => {
+      if (!isOnline()) {
+        cardErrorEl.textContent = "You're offline — reconnect to save.";
+        cardErrorEl.hidden = false;
+        return;
+      }
       const heading = headingInput.value.trim();
       if (!heading) {
         cardErrorEl.hidden = false;
@@ -209,7 +226,9 @@ export function initTherapyView(container) {
   });
 
   async function loadNotes() {
-    const { data, error } = await supabase.from("therapy_notes").select("*");
+    const { data, error } = await fetchWithOfflineFallback("therapy_notes", () =>
+      supabase.from("therapy_notes").select("*"),
+    );
 
     if (error) {
       errorEl.textContent = error.message;

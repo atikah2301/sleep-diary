@@ -6,6 +6,7 @@ import { initExportView } from "./export.js";
 import { initGoalsView, loadGoals } from "./goals.js";
 import { initTherapyView } from "./therapy.js";
 import { initTipsView } from "./tips.js";
+import { isOnline, onConnectivityChange } from "./device.js";
 
 const viewLogin = document.querySelector("#view-login");
 const viewMain = document.querySelector("#view-main");
@@ -119,3 +120,10 @@ if (session) {
 } else {
   showLoggedOut();
 }
+
+const offlineBanner = document.querySelector("#offline-banner");
+function updateOfflineBanner(online) {
+  offlineBanner.hidden = online;
+}
+onConnectivityChange(updateOfflineBanner);
+updateOfflineBanner(isOnline());

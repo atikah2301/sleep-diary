@@ -1,5 +1,7 @@
 import { addMinutesToClock, parseClockTime } from "./time.js";
 import { supabase } from "./supabase-client.js";
+import { isOnline, onConnectivityChange } from "./device.js";
+import { fetchWithOfflineFallback } from "./offline-cache.js";
 
 const DEFAULT_GOALS = {
   durationGoalMinutes: 480,
@@ -36,7 +38,9 @@ export function getGoals() {
 /** Fetches the singleton goals row from Supabase and refreshes the in-memory cache that
  * getGoals() reads from, so goals stay in sync across devices/browsers. */
 export async function loadGoals() {
-  const { data, error } = await supabase.from("user_goals").select("*").eq("id", 1).single();
+  const { data, error } = await fetchWithOfflineFallback("user_goals", () =>
+    supabase.from("user_goals").select("*").eq("id", 1).single(),
+  );
   if (error) return { error };
   cachedGoals = mapRowToGoals(data);
   window.dispatchEvent(new CustomEvent("goals-updated"));
@@ -89,6 +93,7 @@ export function initGoalsView(container) {
       <p id="goal-wake-time-error" class="error-message" aria-live="polite" hidden></p>
       <p class="hint" id="goal-bed-time-derived"></p>
 
+      <p id="goals-offline-msg" class="offline-hint" hidden>You're offline — reconnect to save.</p>
       <button type="button" class="primary" id="goals-save">Save goals</button>
       <p id="goals-saved-msg" class="form-feedback" aria-live="polite" hidden>Saved.</p>
       <p id="goals-error" class="error-message" aria-live="polite" hidden></p>
@@ -104,6 +109,7 @@ export function initGoalsView(container) {
   const saveBtn = container.querySelector("#goals-save");
   const savedMsg = container.querySelector("#goals-saved-msg");
   const errorEl = container.querySelector("#goals-error");
+  const offlineMsgEl = container.querySelector("#goals-offline-msg");
 
   function applyGoalsToInputs(goals) {
     durationInput.value = goals.durationGoalMinutes / 60;
@@ -123,7 +129,8 @@ export function initGoalsView(container) {
     const valid = wakeTimeOrderValid();
     wakeTimeErrorEl.hidden = valid;
     if (!valid) wakeTimeErrorEl.textContent = "Earliest wake time goal must be before the latest wake time goal.";
-    saveBtn.disabled = !valid;
+    saveBtn.disabled = !valid || !isOnline();
+    offlineMsgEl.hidden = isOnline();
     return valid;
   }
 
@@ -143,11 +150,17 @@ export function initGoalsView(container) {
       updateBedTimeDerived();
     }),
   );
+  onConnectivityChange(updateWakeTimeValidation);
   applyGoalsToInputs(getGoals());
 
   saveBtn.addEventListener("click", async () => {
     if (!updateWakeTimeValidation()) return;
     errorEl.hidden = true;
+    if (!isOnline()) {
+      errorEl.textContent = "You're offline — reconnect to save.";
+      errorEl.hidden = false;
+      return;
+    }
     const hours = parseFloat(durationInput.value);
     const pct = parseFloat(efficiencyInput.value);
     const { error } = await setGoals({

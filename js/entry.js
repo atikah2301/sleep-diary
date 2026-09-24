@@ -1,6 +1,7 @@
 import { supabase } from "./supabase-client.js";
 import { computeMetrics } from "./metrics.js";
 import { minutesBetweenClocks, addMinutesToClock, unwrapSequence } from "./time.js";
+import { isOnline, onConnectivityChange } from "./device.js";
 
 function yesterdayISO() {
   const d = new Date();
@@ -187,6 +188,7 @@ export function initEntryView(container) {
       <p id="notes-char-count" class="char-counter">0 / ${NOTES_MAX_LENGTH}</p>
 
       <p id="entry-error" class="error-message" aria-live="polite" hidden></p>
+      <p id="entry-offline-msg" class="offline-hint" hidden>You're offline — reconnect to save.</p>
       <button type="submit" class="primary" id="entry-submit">Save entry</button>
       <p id="entry-no-changes-msg" class="form-feedback" aria-live="polite" hidden>No changes to save.</p>
     </form>
@@ -233,6 +235,7 @@ export function initEntryView(container) {
   const form = container.querySelector("#entry-form");
   const submitBtn = container.querySelector("#entry-submit");
   const errorEl = container.querySelector("#entry-error");
+  const offlineMsgEl = container.querySelector("#entry-offline-msg");
   const summaryEl = container.querySelector("#entry-summary");
   const modeBanner = container.querySelector("#entry-mode-banner");
   const modeDateEl = container.querySelector("#entry-mode-date");
@@ -294,7 +297,8 @@ export function initEntryView(container) {
     if (orderIssues.length > 0) errorEl.textContent = orderIssues.join(" ");
 
     submitBtn.disabled =
-      !awakeningsOk || !awakeMinutesOk || !napCountOk || !napMinutesOk || orderIssues.length > 0;
+      !awakeningsOk || !awakeMinutesOk || !napCountOk || !napMinutesOk || orderIssues.length > 0 || !isOnline();
+    offlineMsgEl.hidden = isOnline();
   }
 
   function snapshotFromForm() {
@@ -406,6 +410,11 @@ export function initEntryView(container) {
   sleepLocationSelect.addEventListener("change", updateEditingState);
   notesInput.addEventListener("input", updateEditingState);
 
+  onConnectivityChange(() => {
+    updateFormValidity();
+    updateEditingState();
+  });
+
   function applyEntryToForm(entry) {
     bedTimeInput.value = entry.bed_time?.slice(0, 5) ?? "";
     sleepTimeInput.value = entry.sleep_time?.slice(0, 5) ?? "";
@@ -425,6 +434,14 @@ export function initEntryView(container) {
 
   async function loadEntryForDate(date) {
     errorEl.hidden = true;
+    if (!isOnline()) {
+      errorEl.textContent = "You're offline — can't load this entry until you're back online.";
+      errorEl.hidden = false;
+      applyEntryToForm(EMPTY_FORM);
+      savedSnapshot = null;
+      updateEditingState();
+      return;
+    }
     const { data, error } = await supabase
       .from("diary_entries")
       .select("*")
@@ -534,6 +551,12 @@ export function initEntryView(container) {
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     errorEl.hidden = true;
+
+    if (!isOnline()) {
+      errorEl.textContent = "You're offline — reconnect to save.";
+      errorEl.hidden = false;
+      return;
+    }
 
     if (savedSnapshot && !isDirty) {
       clearTimeout(noChangesTimer);

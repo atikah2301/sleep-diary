@@ -4,6 +4,7 @@ import { minutesSinceNoon, clockFromMinutesSinceNoon } from "./time.js";
 import { getGoals, getBedTimeGoals } from "./goals.js";
 import { mondayOf, addDays, toDateStr } from "./date.js";
 import { retryHint } from "./device.js";
+import { fetchWithOfflineFallback } from "./offline-cache.js";
 
 const CHART_COLORS = {
   efficiency: "#fb923c",
@@ -1077,10 +1078,9 @@ export function initDashboardView(container) {
 
   async function loadEntries() {
     loadingEl.hidden = false;
-    const { data, error } = await supabase
-      .from("diary_entries")
-      .select("*")
-      .order("entry_date", { ascending: true });
+    const { data, error } = await fetchWithOfflineFallback("diary_entries", () =>
+      supabase.from("diary_entries").select("*").order("entry_date", { ascending: true }),
+    );
     loadingEl.hidden = true;
 
     if (error) {

@@ -3,6 +3,7 @@ import { computeMetrics, computeWeekSummary } from "./metrics.js";
 import { addTopScrollbar } from "./table-scroll-sync.js";
 import { toDateStr, mondayOf, addDays, formatWeekHeading } from "./date.js";
 import { retryHint } from "./device.js";
+import { fetchWithOfflineFallback } from "./offline-cache.js";
 
 const COLUMNS = [
   { key: "entry_date", label: "Date" },
@@ -299,10 +300,9 @@ export function initTableView(container) {
 
   async function loadRows() {
     loadingEl.hidden = false;
-    const { data, error } = await supabase
-      .from("diary_entries")
-      .select("*")
-      .order("entry_date", { ascending: true });
+    const { data, error } = await fetchWithOfflineFallback("diary_entries", () =>
+      supabase.from("diary_entries").select("*").order("entry_date", { ascending: true }),
+    );
     loadingEl.hidden = true;
 
     if (error) {
