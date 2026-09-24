@@ -600,6 +600,8 @@ export function initDashboardView(container) {
   function renderMinutesDiffChart(chart, canvas, rowsForChart, label, color, metricsKey) {
     const sorted = [...rowsForChart].sort((a, b) => (a.entry_date < b.entry_date ? -1 : 1));
     const labels = sorted.map((r) => r.entry_date);
+    const values = sorted.map((r) => r.metrics[metricsKey]);
+    const trend = linearTrendDataset(values);
     if (chart) chart.destroy();
     return new Chart(canvas, {
       type: "line",
@@ -608,12 +610,13 @@ export function initDashboardView(container) {
         datasets: [
           {
             label,
-            data: sorted.map((r) => r.metrics[metricsKey]),
+            data: values,
             borderColor: color,
             backgroundColor: color,
             tension: 0.25,
             spanGaps: true,
           },
+          ...(trend ? [trend] : []),
         ],
       },
       options: {
