@@ -76,3 +76,7 @@ To make a change:
 2. Write the SQL — `create table ...` plus RLS policies, following the pattern in the existing
    migration files.
 3. Run it in the Supabase SQL Editor against the live project.
+
+Never edit a migration file once it's been run — even a small follow-up (like adding a column)
+gets its own new timestamped file. Editing an already-applied file makes the repo's history
+disagree with what was actually run against the live database.
