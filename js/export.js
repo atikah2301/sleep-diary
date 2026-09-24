@@ -163,10 +163,10 @@ function renderWeekTable(group, columns) {
     )
     .join("");
   return `
-    <div class="week-block">
-      <p class="week-table-heading">Week of ${formatWeekHeading(group.weekStart)}</p>
-      <table class="export-preview">${head}<tbody>${body}</tbody></table>
-    </div>
+    <table class="export-preview">
+      <caption class="week-table-heading">Week of ${formatWeekHeading(group.weekStart)}</caption>
+      ${head}<tbody>${body}</tbody>
+    </table>
   `;
 }
 
