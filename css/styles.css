@@ -864,6 +864,8 @@ table.data-table tbody tr:hover {
 
   .week-table-heading {
     color: #000;
+    page-break-after: avoid;
+    break-after: avoid;
   }
 
   .summary-row td,
