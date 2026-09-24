@@ -232,7 +232,7 @@ export function initExportView(container) {
   const pdfHintEl = container.querySelector("#export-pdf-hint");
 
   pdfHintEl.textContent = isMobileDevice()
-    ? 'Hint: in the print preview, tap the share icon and choose "Save to Files" (iOS) or "Save as PDF" (Android).'
+    ? 'Hint: in the print preview, switch orientation to Landscape, then tap the share icon and choose "Save to Files" (iOS) or "Save as PDF" (Android).'
     : 'Hint: in the printer window, set the destination/printer to "Save as PDF".';
 
   const syncScrollbar = addTopScrollbar(
