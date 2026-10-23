@@ -3,10 +3,10 @@
 Sleep tracker for CBT-I — a small installable PWA that replaces a paper sleep diary. Log each
 night's data in under a minute; it computes time-in-bed, total sleep time, and sleep efficiency
 for you, and shows trends over time. Only two people ever use it (you and your sleep therapist),
-sharing one passcode.
+sharing one login.
 
 No build step — plain HTML/CSS/JS, hosted free on GitHub Pages, with Supabase providing the
-database, API, and passcode auth (via Row Level Security).
+database, API, and email + password auth (via Row Level Security).
 
 ## One-time setup
 
@@ -14,25 +14,27 @@ database, API, and passcode auth (via Row Level Security).
 
 1. Go to [supabase.com](https://supabase.com), create a free account/project.
 2. In the SQL editor, run each file in `supabase/migrations/`, in filename order. Together they
-   create the `diary_entries` and `therapy_notes` tables, the `sleep_tag` enum, and Row Level
-   Security policies that only allow access to authenticated users.
+   create the `diary_entries`, `therapy_notes` and `user_goals` tables, the `sleep_tag` enum, and
+   Row Level Security policies that only allow access to authenticated users.
 3. Under **Authentication → Sign In / Providers**, disable public sign-ups (so the login page
-   can't be used to create new accounts — the RLS policy trusts that only the one user you create
+   can't be used to create new accounts — the RLS policy trusts that only the user(s) you create
    below can ever log in).
-4. Under **Authentication → Users**, manually create the single shared user:
-   - Email: any placeholder value, e.g. `sleep-diary@example.invalid`
-   - Password: the passcode you'll share with your therapist
+4. Under **Authentication → Users**, manually create the user you'll log in with:
+   - Email: the address you'll type on the login page (the app asks for it every time and never
+     stores it in the repo)
+   - Password: the password you'll share with your therapist
 5. Under **Project Settings → API**, copy the **Project URL** and the **anon public** key.
 
 ### 2. Configure the app
 
-Edit `js/config.js` with your project's URL, anon key, and shared login email (from step 1):
+Edit `js/config.js` with your project's URL and anon key (from step 1):
 
 ```js
 export const SUPABASE_URL = "<your project URL>";
 export const SUPABASE_ANON_KEY = "<your anon public key>";
-export const SHARED_LOGIN_EMAIL = "<the placeholder email from step 1>";
 ```
+
+Don't put a login email in this file — it's committed to a public repo.
 
 The anon key is safe to commit — it only grants what the RLS policies allow, which is
 "authenticated users only," and sign-ups are disabled.
