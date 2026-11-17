@@ -11,6 +11,7 @@ const APP_SHELL = [
   "./js/supabase-client.js",
   "./js/auth.js",
   "./js/time.js",
+  "./js/notes.js",
   "./js/date.js",
   "./js/device.js",
   "./js/metrics.js",
