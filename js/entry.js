@@ -2,6 +2,7 @@ import { supabase } from "./supabase-client.js";
 import { computeMetrics } from "./metrics.js";
 import { minutesBetweenClocks, addMinutesToClock, unwrapSequence, defaultClockFor } from "./time.js";
 import { getGoals } from "./goals.js";
+import { NOTES_MAX_LENGTH, NOTES_SUMMARY_LENGTH, notesHighlightHtml } from "./notes.js";
 import { isOnline, onConnectivityChange } from "./device.js";
 
 function yesterdayISO() {
@@ -33,7 +34,6 @@ function formatWeekday(dateStr) {
   return d.toLocaleDateString(undefined, { weekday: "short" });
 }
 
-const NOTES_MAX_LENGTH = 100;
 
 function addDaysToISODate(dateStr, n) {
   const d = new Date(`${dateStr}T00:00:00`);
@@ -185,8 +185,12 @@ export function initEntryView(container) {
       <p id="nap-minutes-error" class="error-message" aria-live="polite" hidden></p>
 
       <label for="notes">Notes (optional)</label>
-      <textarea id="notes" rows="2" maxlength="${NOTES_MAX_LENGTH}"></textarea>
+      <div class="notes-field">
+        <div id="notes-highlight" class="notes-highlight" aria-hidden="true"></div>
+        <textarea id="notes" rows="5" maxlength="${NOTES_MAX_LENGTH}"></textarea>
+      </div>
       <p id="notes-char-count" class="char-counter">0 / ${NOTES_MAX_LENGTH}</p>
+      <p class="hint notes-hint">Write up to ${NOTES_MAX_LENGTH} characters. Only the first ${NOTES_SUMMARY_LENGTH} (the unhighlighted part) appear in the PDF, so put the key details first.</p>
 
       <p id="entry-error" class="error-message" aria-live="polite" hidden></p>
       <p id="entry-offline-msg" class="offline-hint" hidden>You're offline — reconnect to save.</p>
@@ -233,6 +237,7 @@ export function initEntryView(container) {
   const napMinutesErrorEl = container.querySelector("#nap-minutes-error");
   const notesInput = container.querySelector("#notes");
   const notesCharCountEl = container.querySelector("#notes-char-count");
+  const notesHighlightEl = container.querySelector("#notes-highlight");
   const form = container.querySelector("#entry-form");
   const submitBtn = container.querySelector("#entry-submit");
   const errorEl = container.querySelector("#entry-error");
@@ -324,6 +329,8 @@ export function initEntryView(container) {
 
   function updateEditingState() {
     notesCharCountEl.textContent = `${notesInput.value.length} / ${NOTES_MAX_LENGTH}`;
+    notesHighlightEl.innerHTML = notesHighlightHtml(notesInput.value);
+    notesHighlightEl.scrollTop = notesInput.scrollTop;
 
     const hasExistingEntry = savedSnapshot !== null;
     isDirty = hasExistingEntry && JSON.stringify(snapshotFromForm()) !== JSON.stringify(savedSnapshot);
@@ -431,6 +438,9 @@ export function initEntryView(container) {
   tagSelect.addEventListener("change", updateEditingState);
   sleepLocationSelect.addEventListener("change", updateEditingState);
   notesInput.addEventListener("input", updateEditingState);
+  notesInput.addEventListener("scroll", () => {
+    notesHighlightEl.scrollTop = notesInput.scrollTop;
+  });
 
   onConnectivityChange(() => {
     updateFormValidity();
