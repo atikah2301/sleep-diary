@@ -104,6 +104,17 @@ function groupNapCountByPeriod(rows, period) {
     .map(([key, count]) => ({ key, count }));
 }
 
+function groupNapMinutesByPeriod(rows, period) {
+  const groups = new Map();
+  for (const row of rows) {
+    const key = periodKey(row.entry_date, period);
+    groups.set(key, (groups.get(key) ?? 0) + (row.nap_minutes ?? 0));
+  }
+  return [...groups.entries()]
+    .sort(([a], [b]) => (a < b ? -1 : 1))
+    .map(([key, minutes]) => ({ key, minutes }));
+}
+
 /** Whether a clock time falls within [minClock, maxClock], on the minutesSinceNoon scale
  * so a range spanning midnight (e.g. a bed-time goal of 23:00-00:30) still works. */
 function isTimeInRange(clock, minClock, maxClock) {
@@ -316,6 +327,11 @@ export function initDashboardView(container) {
       </div>
 
       <div class="card">
+        <h2 class="chart-title">Nap time per week</h2>
+        <div class="chart-wrap"><canvas id="nap-duration-chart"></canvas></div>
+      </div>
+
+      <div class="card">
         <h2 class="chart-title">Wake reason breakdown</h2>
         <div class="chart-wrap"><canvas id="tag-breakdown-chart"></canvas></div>
       </div>
@@ -350,6 +366,7 @@ export function initDashboardView(container) {
   const bedTimeCanvas = container.querySelector("#bed-time-chart");
   const timingConsistencyCanvas = container.querySelector("#timing-consistency-chart");
   const napsCanvas = container.querySelector("#naps-chart");
+  const napDurationCanvas = container.querySelector("#nap-duration-chart");
   const tagBreakdownCanvas = container.querySelector("#tag-breakdown-chart");
   const locationBreakdownCanvas = container.querySelector("#location-breakdown-chart");
 
@@ -367,6 +384,7 @@ export function initDashboardView(container) {
   let bedTimeChart = null;
   let timingConsistencyChart = null;
   let napsChart = null;
+  let napDurationChart = null;
   let tagBreakdownChart = null;
   let locationBreakdownChart = null;
 
@@ -911,6 +929,47 @@ export function initDashboardView(container) {
     });
   }
 
+  function renderNapDurationChart(rowsForChart) {
+    const grouped = groupNapMinutesByPeriod(rowsForChart, "week");
+    const labels = grouped.map((g) => g.key);
+    // Pick a tick spacing that gives a handful of clean hour-based gridlines.
+    const maxMinutes = Math.max(0, ...grouped.map((g) => g.minutes));
+    const stepSize = [30, 60, 120, 180, 300, 600, 1200].find((s) => maxMinutes / s <= 8) ?? 1800;
+    if (napDurationChart) napDurationChart.destroy();
+    napDurationChart = new Chart(napDurationCanvas, {
+      type: "bar",
+      data: {
+        labels,
+        datasets: [
+          {
+            label: "Total nap time",
+            data: grouped.map((g) => g.minutes),
+            backgroundColor: CHART_COLORS.nap,
+          },
+        ],
+      },
+      options: {
+        maintainAspectRatio: false,
+        scales: {
+          x: { grid: { color: CHART_COLORS.grid }, ticks: xAxisTicksOptions(labels, "week") },
+          y: {
+            beginAtZero: true,
+            ticks: { color: CHART_COLORS.text, stepSize, callback: (v) => formatMinutes(v) },
+            grid: { color: CHART_COLORS.grid },
+          },
+        },
+        plugins: {
+          legend: { labels: { color: CHART_COLORS.text } },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => `${ctx.dataset.label}: ${formatMinutes(ctx.parsed.y)}`,
+            },
+          },
+        },
+      },
+    });
+  }
+
   function renderBreakdownChart(chart, canvas, grouped, labels) {
     if (chart) chart.destroy();
     return new Chart(canvas, {
@@ -1014,6 +1073,7 @@ export function initDashboardView(container) {
     renderBedTimeChart(filtered);
     renderTimingConsistencyChart(filtered);
     renderNapsChart(filtered);
+    renderNapDurationChart(filtered);
     renderTagBreakdownChart(dateFilteredRows());
     renderLocationBreakdownChart(dateFilteredRows());
     timeToSleepChart = renderMinutesDiffChart(
