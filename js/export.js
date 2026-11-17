@@ -4,6 +4,7 @@ import { addTopScrollbar } from "./table-scroll-sync.js";
 import { groupByWeek, formatWeekHeading } from "./date.js";
 import { isMobileDevice, retryHint } from "./device.js";
 import { fetchWithOfflineFallback } from "./offline-cache.js";
+import { summarizeNotes, escapeHtml } from "./notes.js";
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -150,6 +151,11 @@ function cellClass(key) {
   return `${stickyClass(key)} ${key === "notes" ? "col-notes" : ""}`.trim();
 }
 
+function cellHtml(row, key) {
+  if (key === "notes") return escapeHtml(summarizeNotes(row.notes));
+  return row[key] ?? "";
+}
+
 function renderWeekTable(group, columns) {
   const head = `<thead><tr>${columns
     .map((c) => `<th class="${cellClass(c.key)}">${c.label}</th>`)
@@ -158,7 +164,7 @@ function renderWeekTable(group, columns) {
     .map(
       (row) =>
         `<tr class="${row.isSummaryRow ? "summary-row" : ""}">${columns
-          .map((c) => `<td class="${cellClass(c.key)}">${row[c.key] ?? ""}</td>`)
+          .map((c) => `<td class="${cellClass(c.key)}">${cellHtml(row, c.key)}</td>`)
           .join("")}</tr>`,
     )
     .join("");
