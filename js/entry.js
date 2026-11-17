@@ -1,6 +1,7 @@
 import { supabase } from "./supabase-client.js";
 import { computeMetrics } from "./metrics.js";
-import { minutesBetweenClocks, addMinutesToClock, unwrapSequence } from "./time.js";
+import { minutesBetweenClocks, addMinutesToClock, unwrapSequence, defaultClockFor } from "./time.js";
+import { getGoals } from "./goals.js";
 import { isOnline, onConnectivityChange } from "./device.js";
 
 function yesterdayISO() {
@@ -390,6 +391,27 @@ export function initEntryView(container) {
 
     setSleepMode(btn.dataset.mode);
   });
+
+  // An empty time input opens its picker at the current time, which is rarely what you
+  // want. So when you tap an empty one, fill it with a sensible starting point first (the
+  // picker then opens there) and let the existing "input" handlers pick the change up.
+  function prefillWhenEmpty(input, field) {
+    const fill = () => {
+      if (input.value) return;
+      input.value = defaultClockFor(
+        field,
+        { bed: bedTimeInput.value, wake: wakeTimeInput.value },
+        getGoals().minWakeTime,
+      );
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    };
+    input.addEventListener("pointerdown", fill);
+    input.addEventListener("focus", fill);
+  }
+  prefillWhenEmpty(bedTimeInput, "bed");
+  prefillWhenEmpty(sleepTimeInput, "sleep");
+  prefillWhenEmpty(wakeTimeInput, "wake");
+  prefillWhenEmpty(risingTimeInput, "rising");
 
   [bedTimeInput, sleepTimeInput, sleepDurationInput, wakeTimeInput, risingTimeInput].forEach((el) =>
     el.addEventListener("input", () => {
