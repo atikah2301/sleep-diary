@@ -64,3 +64,35 @@ export function minutesSinceNoon(clock) {
 export function clockFromMinutesSinceNoon(minutes) {
   return formatClockTime(minutes + 12 * 60);
 }
+
+/** The current local time as an "HH:MM" clock string. */
+export function clockNow(now = new Date()) {
+  return formatClockTime(now.getHours() * 60 + now.getMinutes());
+}
+
+/**
+ * The time an empty entry field should start at when the user taps it.
+ *
+ * - bed:    right now (you usually log this as you get into bed)
+ * - sleep:  the bed time if one is set, otherwise right now
+ * - wake:   the earliest wake time goal
+ * - rising: the wake time if one is set, otherwise the earliest wake time goal
+ *
+ * @param {"bed"|"sleep"|"wake"|"rising"} field
+ * @param {{bed?: string, wake?: string}} current values already in the form
+ * @param {string} wakeGoal "HH:MM" earliest wake time goal
+ */
+export function defaultClockFor(field, current, wakeGoal, now = new Date()) {
+  switch (field) {
+    case "bed":
+      return clockNow(now);
+    case "sleep":
+      return current.bed || clockNow(now);
+    case "wake":
+      return wakeGoal;
+    case "rising":
+      return current.wake || wakeGoal;
+    default:
+      throw new Error(`Unknown time field: ${field}`);
+  }
+}
